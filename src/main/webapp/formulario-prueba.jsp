@@ -1,5 +1,6 @@
 <%@ page import="com.rappi.crud.entidades.Datos" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<!DOCTYPE html>
 <html>
 <head>
     <title>Datos de Prueba</title>
@@ -33,20 +34,31 @@
         border-radius: 5px;
         cursor: pointer;
     }
+    
+    button.btn-secundario {
+        background-color: #f0ab00;
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 400;
+        text-align: center;
+        outline: none;
+        border: none;
+        padding: 0.6rem 1.4rem;
+        border-radius: 5px;
+        cursor: pointer;
+    }
 </style>
 <%
-//    final Accion accionFormulario = request.getParameter("accion") != null
-//            ? Accion.valueOf(request.getParameter("accion"))
-//            : Accion.LEER;
-
     final Datos datos = (Datos) request.getAttribute("datos");
 
-    String id = request.getParameter("id-datos");
+    String id = request.getParameter("id");
 
+    final boolean esRegistroExistente = id != null;
     final boolean hayDatos = datos != null;
-    final boolean formularioEnviable = false;
+    
+    String accionForm = esRegistroExistente ? "ACTUALIZAR" : "CREAR";
 
-    if (hayDatos)
+    if (esRegistroExistente)
     {
         System.out.println("Datos " + datos.toString());
     }
@@ -54,28 +66,31 @@
 <body>
     <h1>
         
-        <%= "Formulario de Prueba"
-//            accionFormulario == Accion.CREAR
-//                ? "Registra un Nuevo Producto"
-//                : accionFormulario == Accion.ACTUALIZAR
-//                    ? "Editar Producto"
-//                    : "Detalles del Producto"
+        <%=
+            esRegistroExistente
+                ? "Modifica un Recurso"
+                : "Crea un Nuevo Registro"
         %>
     </h1>
 
-    <form method="post" action="${pageContext.request.contextPath}/productos/detalles">
-        <!--
-        <input type="hidden" name="accion" value="<%= // accionFormulario.toString() %>" />
-        <input type="hidden" name="id" value="<%= //id != null ? id : "" %>" />
-        -->
+    <form method="POST" action="${pageContext.request.contextPath}/pruebas">
         
-        <input type="text" name="titulo" placeholder="Titulo" value="<%= hayDatos ? datos.getTitulo(): "" %>" />
-        <input type="datetime" name="fecha" placeholder="Fecha" value="<%= hayDatos ? datos.getFecha() : ""%>" />
-        <input type="text" name="descripcion" placeholder="Descripción" value="<%= hayDatos ? datos.getDescripcion() : ""%>"/>
-        <input type="number" step="1" name="status" placeholder="Estatus" value="<%= hayDatos ? datos.getStatus(): ""%>"/>
+        <% if (hayDatos) { %>
+            <input type="hidden" name="id" value="<%= id %>" />
+        <% } %>
+        
+        <input type="hidden" name="metodo" value="<%= accionForm %>"/>
+        
+        <input type="text" id="campo-titulo" name="titulo" placeholder="Titulo" value="<%= hayDatos ? datos.getTitulo(): "" %>" />
+        <input type="datetime-local" id="campo-fecha" name="fecha" placeholder="Fecha" value="<%= hayDatos ? datos.getFecha() : ""%>" />
+        <input type="text" id="campo-descripcion" name="descripcion" placeholder="Descripción" value="<%= hayDatos ? datos.getDescripcion() : ""%>"/>
+        <input type="number" id="campo-status" step="1" name="status" placeholder="Estatus" value="<%= hayDatos ? datos.getStatus(): ""%>"/>
 
-        <% if (formularioEnviable) { %>
-            <input class="btn-primario" type="submit" value="Enviar" />
+        <% if (accionForm.equals("CREAR")) { %>
+            <input type="submit" class="btn-primario" value="Crear" />
+            
+        <% } else if (accionForm.equals("ACTUALIZAR")) { %>
+            <input type="submit" class="btn-secundario" value="Guardar Cambios" />
         <% } %>
 
     </form>

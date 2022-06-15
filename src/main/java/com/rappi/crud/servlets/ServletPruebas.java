@@ -4,7 +4,6 @@ import com.rappi.crud.dao.PruebaDAO;
 import com.rappi.crud.entidades.Datos;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,39 +48,16 @@ public class ServletPruebas extends HttpServlet
     protected void doGet(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException
     {        
-        Map<String, String[]> params = req.getParameterMap();
+        Map<String, String[]> parametros = req.getParameterMap();
         
-        params.entrySet().stream().forEach(parametro -> {
-            System.out.println(parametro.getKey() + ": " + parametro.getKey());
-        });
-            
-        String idStr = params.get("id") != null ? params.get("id")[0] : null;
-
-        try
+        String idStr = null;
+        
+        if (parametros.get(Datos.COLUMNA_ID) != null)
         {
-            List<Datos> datos = new ArrayList<>();
-            
-            if (idStr != null)
-            {
-                int id = Integer.valueOf(idStr);
-                                
-                datos.add(mPruebaDAO.getDatosPorId(id));
-                
-            } else 
-            {
-                datos.addAll(mPruebaDAO.getDatos());
-            }
-
-            req.setAttribute("datos", datos);
-
-            RequestDispatcher requestDispatcher = req.getRequestDispatcher("/datos.jsp");
-
-            requestDispatcher.forward(req, res);
-            
-        } catch (SQLException e)
-        {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            idStr = parametros.get(Datos.COLUMNA_ID)[0];
         }
+        
+        obtenerListaDatos(req, res, idStr);
     }
 
     /**
@@ -95,54 +71,104 @@ public class ServletPruebas extends HttpServlet
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException
-    {
-        System.out.println("En doPost");
+    {        
+        Map<String, String[]> parametros = req.getParameterMap();
         
+        int id = -1;
+        
+        if (parametros.get(Datos.COLUMNA_ID) != null)
+        {
+            String idStr = parametros.get(Datos.COLUMNA_ID)[0];
+            
+            id = Integer.parseInt(idStr);
+        }
+        
+        Accion accion;
+        boolean esRegistroExistente = id >= 0;
+        Datos datosRecibidos = null;
+        
+        // Determinar el tipo de accion segun el id y los campos recibidos.
+        // CREATE recibe datos, pero no un ID.
+        // UPDATE recibe datos y un ID.
+        // DELETE recibe un ID, pero no datos.
         try 
         {
-            Map<String, String> campos = new HashMap<>();
+            datosRecibidos = Datos.desdeParametros(parametros);
+            accion = esRegistroExistente ? Accion.ACTUALIZAR : Accion.CREAR;
             
-            for (Map.Entry<String, String[]> dato : req.getParameterMap().entrySet())
+        } catch (NullPointerException | NumberFormatException e)
+        {
+            e.printStackTrace();
+            System.out.println("Excepcion: " + e.getMessage());
+            accion = Accion.ELIMINAR;
+        }
+        
+        System.out.println("Datos: " + datosRecibidos + ", accion: " + accion.toString());
+            
+        // Realizar la accion CUD determinada.
+        try 
+        {
+            switch (accion) 
             {
-                System.out.println(dato.getKey() + ": " + dato.getValue()[0]);
-                campos.put(dato.getKey(), dato.getValue()[0]);
-            }
-            
-            Datos nuevosDatos = Datos.desdeMapa(campos);
-            
-            System.out.println("Nuevos datos: " + nuevosDatos);
-            
-            int idInsertado = mPruebaDAO.insertarDatos(nuevosDatos);
-
-            if (idInsertado >= 0)
-            {
-                System.out.println("Producto registrado: " + idInsertado);
+                case CREAR:
+                    int idInsertado = mPruebaDAO.insertarDatos(datosRecibidos);
+                    
+                    if (idInsertado >= 0) 
+                    {
+                        System.out.println("Datos insertados, ID = " + idInsertado);
+                    }
+                    break;
+                case ACTUALIZAR:
+                    mPruebaDAO.actualizar(datosRecibidos);
+                    break;
+                case ELIMINAR:
+                    mPruebaDAO.eliminar(id);
+                    break;
             }
             
         } catch (SQLException e)
         {
             Logger.getLogger(ServletPruebas.class.getName()).log(Level.SEVERE, e.getMessage());
+        } finally 
+        {
+            obtenerListaDatos(req, res, null);
         }
     }
     
-    @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    private void obtenerListaDatos(HttpServletRequest req, HttpServletResponse res, String idStr) 
+            throws ServletException, IOException
     {
-        System.out.println("En doPut");
-        
-        Map<String, String> campos = new HashMap<>();
-            
-        for (Map.Entry<String, String[]> dato : req.getParameterMap().entrySet())
+        try
         {
-            System.out.println(dato.getKey() + ": " + dato.getValue()[0]);
-            campos.put(dato.getKey(), dato.getValue()[0]);
-        }
-    }
+            if (idStr != null)
+            {
+                // Obtener un registro especifico de la BD.
+                int id = Integer.valueOf(idStr);
+                                
+                Datos datos = mPruebaDAO.getDatosPorId(id);
+                
+                req.setAttribute("datos", datos);
+                
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/formulario-prueba.jsp");
 
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-    {
-        System.out.println("En doDelete");
+                requestDispatcher.forward(req, res);
+                
+            } else 
+            {
+                // Obtener todos los registros disponibles.
+                List<Datos> regDatos = mPruebaDAO.getDatos();
+                
+                req.setAttribute("datos", regDatos);
+                
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/datos.jsp");
+
+                requestDispatcher.forward(req, res);
+            }
+            
+        } catch (SQLException e)
+        {
+            logger.log(Level.SEVERE, e.getMessage(), e);
+        }
     }
 
     /**

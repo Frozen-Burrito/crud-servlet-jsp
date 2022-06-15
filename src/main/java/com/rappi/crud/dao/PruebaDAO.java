@@ -18,7 +18,7 @@ public class PruebaDAO
     private static final String NOMBRE_TABLA = "datos";
     
     private static final String QUERY_TODOS = "SELECT * FROM " + NOMBRE_TABLA;
-    private static final String QUERY_POR_ID = "SELECT * FROM " + NOMBRE_TABLA + " WHERE id = ?";
+    private static final String QUERY_POR_ID = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + Datos.COLUMNA_ID + " = ?";
     private static final String QUERY_CREAR = "INSERT INTO " + NOMBRE_TABLA + " (titulo, fecha, descripcion, status) VALUES(?, ?, ?, ?)";
     private static final String QUERY_ACTUALIZAR = "UPDATE " + NOMBRE_TABLA + " SET titulo = ?, fecha = ?, descripcion = ? , status = ? WHERE id = ?";
     private static final String QUERY_ELIMINAR = "DELETE FROM " + NOMBRE_TABLA + " WHERE id = ?";
@@ -28,41 +28,19 @@ public class PruebaDAO
         this.mDataSource = dataSource;
     }
     
-    private Connection getConexion() 
-    {
-        Connection conexion = null;
-        
-        try 
-        {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            
-            conexion = DriverManager.getConnection("jdbc:mysql://localhost:3306/test", "root", "");
-            
-        } catch (SQLException | ClassNotFoundException e) 
-        {
-            e.printStackTrace();
-        }
-        
-        return conexion;
-    }
-    
     public List<Datos> getDatos() throws SQLException 
     {
         List<Datos> filasDatos = new ArrayList<>();
-        
-        System.out.println("Obteniendo conexion: " + mDataSource.toString());
         
         Connection conexion = mDataSource.getConnection();
         
         if (conexion != null)
         {
-            System.out.println("Conexion: " + conexion.getClientInfo());
-
             PreparedStatement stmt = conexion.prepareStatement(QUERY_TODOS);
             ResultSet resultados = stmt.executeQuery();
 
             while (resultados.next())
-            {
+            {   
                 Datos datos = new Datos(
                     resultados.getInt("id"),
                     resultados.getString("titulo"),
@@ -74,6 +52,8 @@ public class PruebaDAO
                 
                 filasDatos.add(datos);
             }
+            
+            
         }
 
         return filasDatos;
@@ -81,7 +61,7 @@ public class PruebaDAO
     
     public Datos getDatosPorId(int idDatos) throws SQLException
     {
-        Connection conexion = getConexion();
+        Connection conexion = mDataSource.getConnection();
 
         PreparedStatement stmt = conexion.prepareStatement(QUERY_POR_ID);
         stmt.setInt(1, idDatos);
@@ -138,6 +118,7 @@ public class PruebaDAO
         stmt.setTimestamp(2, cambiosADatos.getFecha());
         stmt.setString(3, cambiosADatos.getDescripcion());
         stmt.setInt(4, cambiosADatos.getStatus());
+        stmt.setInt(5, cambiosADatos.getId());
 
         stmt.executeUpdate();
     }

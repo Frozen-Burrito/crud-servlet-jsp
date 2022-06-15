@@ -67,6 +67,19 @@
     tr.table-header {
         border-bottom: 1px solid black;
     }
+    
+    td.td-acciones > a.btn-editar {
+        background-color: #f0ab00;
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 400;
+        text-align: center;
+        outline: none;
+        border: none;
+        padding: 0.6rem 1.4rem;
+        border-radius: 5px;
+        cursor: pointer;
+    }
 
 </style>
 <%
@@ -110,10 +123,14 @@
                 <td><%= registroDatos.getFechaCreacion()%></td>
 
                 <td class="td-acciones">
-                    <a href="formulario-prueba.jsp?id-datos=<%= registroDatos.getId() %>">Editar</a>
+                    <a 
+                        class="btn-editar" 
+                        href="${pageContext.request.contextPath}/pruebas?id=<%= registroDatos.getId() %>">
+                        Editar
+                    </a>
 
                     <!-- TODO: Usar DELETE para esto. -->
-                    <form method="post" action="${pageContext.request.contextPath}/pruebas">
+                    <form method="POST" action="${pageContext.request.contextPath}/pruebas">
                         <input type="hidden" name="accion" value="${Accion.ELIMINAR.toString()}" />
                         <input type="hidden" name="id" value="<%= registroDatos.getId() %>"/>
 

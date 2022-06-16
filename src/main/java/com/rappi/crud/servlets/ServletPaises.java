@@ -1,10 +1,9 @@
 package com.rappi.crud.servlets;
 
-import com.rappi.crud.dao.PruebaDAO;
-import com.rappi.crud.entidades.Datos;
+import com.rappi.crud.dao.PaisDAO;
+import com.rappi.crud.entidades.Pais;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -18,22 +17,22 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletPruebas", value = { "/pruebas" })
-public class ServletPruebas extends HttpServlet
+@WebServlet(name = "ServletPaises", urlPatterns = {"/paises"})
+public class ServletPaises extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
     private DataSource mPoolConexionesDB;
     
-    private static final Logger logger = Logger.getLogger(ServletPruebas.class.getName());
+    private static final Logger mLogger = Logger.getLogger(ServletPaises.class.getName());
     
-    private PruebaDAO mPruebaDAO;
+    private PaisDAO mPaisDAO;
     
     @Override
     public void init() throws ServletException
     {
         super.init();
 
-        mPruebaDAO = new PruebaDAO(mPoolConexionesDB);
+        mPaisDAO = new PaisDAO(mPoolConexionesDB);
     }
 
     /**
@@ -47,17 +46,17 @@ public class ServletPruebas extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException
-    {        
+    {
         Map<String, String[]> parametros = req.getParameterMap();
         
-        String idStr = null;
+        String codigoPais = null;
         
-        if (parametros.get(Datos.COLUMNA_ID) != null)
+        if (parametros.get(PaisDAO.COLUMNA_ID) != null)
         {
-            idStr = parametros.get(Datos.COLUMNA_ID)[0];
+            codigoPais = parametros.get(PaisDAO.COLUMNA_ID)[0];
         }
         
-        obtenerListaDatos(req, res, idStr);
+        obtenerListaDatos(req, res, codigoPais);
     }
 
     /**
@@ -71,39 +70,40 @@ public class ServletPruebas extends HttpServlet
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException
-    {        
+    {
         Map<String, String[]> parametros = req.getParameterMap();
         
-        int id = -1;
+        String idPais = null;
         
-        if (parametros.get(Datos.COLUMNA_ID) != null)
+        if (parametros.get(PaisDAO.COLUMNA_ID) != null)
         {
-            String idStr = parametros.get(Datos.COLUMNA_ID)[0];
-            
-            id = Integer.parseInt(idStr);
+            idPais = parametros.get(PaisDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion;
-        boolean esRegistroExistente = id >= 0;
-        Datos datosRecibidos = null;
+        Accion accion = Accion.CREAR;
         
-        // Determinar el tipo de accion segun el id y los campos recibidos.
-        // CREATE recibe datos, pero no un ID.
-        // UPDATE recibe datos y un ID.
-        // DELETE recibe un ID, pero no datos.
-        try 
+        if (parametros.get(Accion.class.getName()) != null) 
         {
-            datosRecibidos = Datos.desdeParametros(parametros);
-            accion = esRegistroExistente ? Accion.ACTUALIZAR : Accion.CREAR;
-            
-        } catch (NullPointerException | NumberFormatException e)
-        {
-            e.printStackTrace();
-            System.out.println("Excepcion: " + e.getMessage());
-            accion = Accion.ELIMINAR;
+            accion = Accion.valueOf(parametros.get(Accion.class.getName())[0]);
         }
         
-        System.out.println("Datos: " + datosRecibidos + ", accion: " + accion.toString());
+        Pais datosRecibidos = null;
+        
+        // Obtener datos del formulario si la accion es CREAR o ACTUALIZAR.
+        if (!accion.equals(Accion.ELIMINAR))
+        {
+            try 
+            {
+                datosRecibidos = Pais.desdeParametros(parametros);
+
+            } catch (NullPointerException | NumberFormatException e)
+            {
+                mLogger.log(Level.SEVERE, null, e);
+                accion = Accion.ELIMINAR;
+            }
+        }
+        
+        System.out.println("Accion: " + accion);
             
         // Realizar la accion CUD determinada.
         try 
@@ -111,7 +111,7 @@ public class ServletPruebas extends HttpServlet
             switch (accion) 
             {
                 case CREAR:
-                    int idInsertado = mPruebaDAO.insertarDatos(datosRecibidos);
+                    int idInsertado = mPaisDAO.insertarPais(datosRecibidos);
                     
                     if (idInsertado >= 0) 
                     {
@@ -119,55 +119,54 @@ public class ServletPruebas extends HttpServlet
                     }
                     break;
                 case ACTUALIZAR:
-                    mPruebaDAO.actualizar(datosRecibidos);
+                    mPaisDAO.actualizar(datosRecibidos);
                     break;
                 case ELIMINAR:
-                    mPruebaDAO.eliminar(id);
+                    mPaisDAO.eliminar(idPais);
                     break;
             }
             
         } catch (SQLException e)
         {
-            Logger.getLogger(ServletPruebas.class.getName()).log(Level.SEVERE, e.getMessage());
+            mLogger.log(Level.SEVERE, e.getMessage());
+            
         } finally 
         {
             obtenerListaDatos(req, res, null);
         }
     }
     
-    private void obtenerListaDatos(HttpServletRequest req, HttpServletResponse res, String idStr) 
+    private void obtenerListaDatos(HttpServletRequest req, HttpServletResponse res, String codigoPais) 
             throws ServletException, IOException
     {
         try
         {
-            if (idStr != null)
+            if (codigoPais != null)
             {
-                // Obtener un registro especifico de la BD.
-                int id = Integer.valueOf(idStr);
-                                
-                Datos datos = mPruebaDAO.getDatosPorId(id);
+                // Obtener un registro especifico de la BD.                               
+                Pais pais = mPaisDAO.getPaisPorId(codigoPais);
                 
-                req.setAttribute("datos", datos);
+                req.setAttribute("pais", pais);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/formulario-prueba.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/paises/formulario.jsp");
 
                 requestDispatcher.forward(req, res);
                 
             } else 
             {
                 // Obtener todos los registros disponibles.
-                List<Datos> regDatos = mPruebaDAO.getDatos();
+                List<Pais> paises = mPaisDAO.getPaises();
                 
-                req.setAttribute("datos", regDatos);
+                req.setAttribute("paises", paises);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/datos.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/paises/lista.jsp");
 
                 requestDispatcher.forward(req, res);
             }
             
         } catch (SQLException e)
         {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            mLogger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
@@ -179,6 +178,7 @@ public class ServletPruebas extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Un simple servlet de pruebas";
+        return "Acceso y modificación de países.";
     }
+
 }

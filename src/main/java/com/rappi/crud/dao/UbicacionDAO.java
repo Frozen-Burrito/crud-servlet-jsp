@@ -69,7 +69,7 @@ public class UbicacionDAO
      * @return La Ubicacion, o null si no existe en la BD.
      * @throws SQLException 
      */
-    public Ubicacion getColoniaPorId(int id) throws SQLException
+    public Ubicacion getUbicacionPorId(int id) throws SQLException
     {
         Connection conexion = mDataSource.getConnection();
         

@@ -1,9 +1,9 @@
 package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.EstadoDAO;
-import com.rappi.crud.dao.PaisDAO;
+import com.rappi.crud.dao.MunicipioDAO;
 import com.rappi.crud.entidades.Estado;
-import com.rappi.crud.entidades.Pais;
+import com.rappi.crud.entidades.Municipio;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
@@ -19,25 +19,25 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletEstados", urlPatterns = {"/estados"})
-public class ServletEstados extends HttpServlet
+@WebServlet(name = "ServletMunicipios", urlPatterns = {"/municipios"})
+public class ServletMunicipios extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
     private DataSource mPoolConexionesDB;
     
-    private static final Logger mLogger = Logger.getLogger(ServletEstados.class.getName());
+    private static final Logger mLogger = Logger.getLogger(ServletMunicipios.class.getName());
     
-    private EstadoDAO mEstadoDAO;
+    private MunicipioDAO mMunicipioDAO;
     
-    private PaisDAO mPaisesDAO;
+    private EstadoDAO mEstadosDAO;
     
     @Override
     public void init() throws ServletException
     {
         super.init();
 
-        mEstadoDAO = new EstadoDAO(mPoolConexionesDB);
-        mPaisesDAO = new PaisDAO(mPoolConexionesDB);
+        mMunicipioDAO = new MunicipioDAO(mPoolConexionesDB);
+        mEstadosDAO = new EstadoDAO(mPoolConexionesDB);
     }
 
     /**
@@ -54,11 +54,11 @@ public class ServletEstados extends HttpServlet
     {
         Map<String, String[]> parametros = req.getParameterMap();
         
-        String idEstado = null;
+        String idMunicipio = null;
         
-        if (parametros.get(EstadoDAO.COLUMNA_ID) != null)
+        if (parametros.get(MunicipioDAO.COLUMNA_ID) != null)
         {
-            idEstado = parametros.get(EstadoDAO.COLUMNA_ID)[0];
+            idMunicipio = parametros.get(MunicipioDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = Accion.LEER;
@@ -69,7 +69,7 @@ public class ServletEstados extends HttpServlet
             accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
         }
         
-        obtenerListaDatos(req, res, idEstado, accion);
+        obtenerListaDatos(req, res, idMunicipio, accion);
     }
 
     /**
@@ -86,11 +86,11 @@ public class ServletEstados extends HttpServlet
     {
         Map<String, String[]> parametros = req.getParameterMap();
         
-        String idEstado = null;
+        String idMunicipio = null;
         
-        if (parametros.get(EstadoDAO.COLUMNA_ID) != null)
+        if (parametros.get(MunicipioDAO.COLUMNA_ID) != null)
         {
-            idEstado = parametros.get(EstadoDAO.COLUMNA_ID)[0];
+            idMunicipio = parametros.get(MunicipioDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = Accion.CREAR;
@@ -101,14 +101,14 @@ public class ServletEstados extends HttpServlet
             accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
         }
         
-        Estado datosRecibidos = null;
+        Municipio datosRecibidos = null;
         
         // Obtener datos del formulario si la accion es CREAR o ACTUALIZAR.
         if (!accion.equals(Accion.ELIMINAR))
         {
             try 
             {
-                datosRecibidos = Estado.desdeParametros(parametros);
+                datosRecibidos = Municipio.desdeParametros(parametros);
 
             } catch (NullPointerException | NumberFormatException e)
             {
@@ -125,7 +125,7 @@ public class ServletEstados extends HttpServlet
             switch (accion) 
             {
                 case CREAR:
-                    int idInsertado = mEstadoDAO.insertarEstado(datosRecibidos);
+                    int idInsertado = mMunicipioDAO.insertar(datosRecibidos);
                     
                     if (idInsertado >= 0) 
                     {
@@ -133,11 +133,11 @@ public class ServletEstados extends HttpServlet
                     }
                     break;
                 case ACTUALIZAR:
-                    mEstadoDAO.actualizar(datosRecibidos);
+                    mMunicipioDAO.actualizar(datosRecibidos);
                     break;
                 case ELIMINAR:
-                    int id = Integer.parseInt(idEstado);
-                    mEstadoDAO.eliminar(id);
+                    int id = Integer.parseInt(idMunicipio);
+                    mMunicipioDAO.eliminar(id);
                     break;
             }
             
@@ -152,32 +152,31 @@ public class ServletEstados extends HttpServlet
     }
     
     private void obtenerListaDatos(HttpServletRequest req, HttpServletResponse res, 
-            String idEstado, Accion accion) 
+            String idMunicipio, Accion accion) 
             throws ServletException, IOException
     {
-        System.out.println("En doGet");
         try
         {
             req.setAttribute("accion", accion);
 
-            if (idEstado != null || accion.equals(Accion.CREAR))
+            if (idMunicipio != null || accion.equals(Accion.CREAR))
             {
-                if (idEstado != null) 
+                if (idMunicipio != null) 
                 {
-                    int id = Integer.parseInt(idEstado);
+                    int id = Integer.parseInt(idMunicipio);
                     
                     // Obtener un registro especifico de la BD.                               
-                    Estado estado = mEstadoDAO.getEstadoPorId(id);
+                    Municipio municipio = mMunicipioDAO.getMunicipioPorId(id);
                     
-                    req.setAttribute("estado", estado);
+                    req.setAttribute("municipio", municipio);
                 }
                 
                 // Obtener entidades relacionadas de la BD.
-                List<Pais> paises = mPaisesDAO.getPaises();
+                List<Estado> estados = mEstadosDAO.getEstados();
                 
-                req.setAttribute("paises", paises);
+                req.setAttribute("estados", estados);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/estados/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/municipios/formulario.jsp");
                
                 System.out.println(requestDispatcher == null);
 
@@ -186,11 +185,11 @@ public class ServletEstados extends HttpServlet
             } else 
             {
                 // Obtener todos los registros disponibles.
-                List<Estado> estados = mEstadoDAO.getEstados();
+                List<Municipio> municipios = mMunicipioDAO.getMunicipios();
                 
-                req.setAttribute("estados", estados);
+                req.setAttribute("municipios", municipios);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/estados/lista.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/municipios/lista.jsp");
 
                 requestDispatcher.forward(req, res);
             }
@@ -209,7 +208,7 @@ public class ServletEstados extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Acceso y modificación de países.";
+        return "Acceso y modificación de municipios.";
     }
 
 }

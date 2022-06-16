@@ -1,15 +1,16 @@
 <%@ page import="java.util.List"%>
-<%@ page import="com.rappi.crud.entidades.Municipio"%>
-<%@ page import="com.rappi.crud.dao.MunicipioDAO"%>
-<%@ page import="com.rappi.crud.servlets.Accion"%>
+<%@page import="com.rappi.crud.dao.ColoniaDAO"%>
+<%@page import="com.rappi.crud.entidades.Colonia"%>
+<%@page import="com.rappi.crud.servlets.Accion"%>
+<%@page import="com.rappi.crud.entidades.Pais"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
-    List<Municipio> municipios = (List<Municipio>) request.getAttribute("municipios");
+    List<Colonia> colonias = (List<Colonia>) request.getAttribute("colonias");
     
     final String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
     
-    String urlBase = request.getContextPath() + "/datos-municipios";
+    String urlBase = "colonias";
     
     final String formatoUrlAccion = "%s?%s=%s";
     
@@ -24,21 +25,21 @@
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
 
-    <title><%= Municipio.NOMBRE_ENTIDAD %> | Vista General</title>
+    <title><%= Colonia.NOMBRE_ENTIDAD %>s | Vista General</title>
 </head>
 <body>
     <section class="container">
         
         <div class="row my-5">
             <div class="col">
-                <h1><%= Municipio.NOMBRE_ENTIDAD %></h1>
+                <h1><%= Colonia.NOMBRE_ENTIDAD %></h1>
             </div>
             <div class="col-8">
             </div>
             <div class="col">
                 <a 
                     class="btn btn-primary"
-                    href="<%= urlNuevo %>"
+                    href="${pageContext.request.contextPath}/<%= urlNuevo %>"
                 >
                     Nuevo
                 </a>
@@ -49,32 +50,33 @@
             <tr class="table-header">
                 <th scope="col">ID</th>
                 <th scope="col">Nombre</th>
-                <th scope="col">ID del Estado</th>
+                <th scope="col">Código Postal</th>
+                <th scope="col">ID del Municipio</th>
                 <th scope="col">Acciones</th>
             </tr>
 
-            <% for (Municipio municipio : municipios) { %>
+            <% for (Colonia colonia : colonias) { %>
                 <tr>
                     <th scope="row">                        
-                        <a href="<%= urlDetalles %>&<%= MunicipioDAO.COLUMNA_ID %>=<%= municipio.getId() %>">
-                            <%= municipio.getId() %>
+                        <a href="${pageContext.request.contextPath}/<%= urlDetalles %>&<%= ColoniaDAO.COLUMNA_ID %>=<%= colonia.getId() %>">
+                            <%= colonia.getId() %>
                         </a>
                     </th>
 
-                    <td><%= municipio.getNombre() %></td>
-                    <td><%= municipio.getIdEstado()%></td>
+                    <td><%= colonia.getNombre() %></td>
+                    <td><%= colonia.getCodigoPostal() %></td>
 
                     <td class="td-acciones">
                         <div class="hstack gap-3">
                             <a 
                                 class="btn btn-warning"
-                                href="<%= urlEditar %>&<%= MunicipioDAO.COLUMNA_ID %>=<%= municipio.getId() %>">
+                                href="${pageContext.request.contextPath}/<%= urlEditar %>&<%= ColoniaDAO.COLUMNA_ID %>=<%= colonia.getId() %>">
                                 Editar
                             </a>
 
-                            <form method="POST" action="<%= urlBase %>" style="margin-bottom: 0px">
+                            <form method="POST" action="${pageContext.request.contextPath}/estados" style="margin-bottom: 0px">
                                 <input type="hidden" name="<%= keyParamAccion %>" value="<%= Accion.ELIMINAR.toString() %>" />
-                                <input type="hidden" name="<%= MunicipioDAO.COLUMNA_ID %>" value="<%= municipio.getId() %>"/>
+                                <input type="hidden" name="<%= ColoniaDAO.COLUMNA_ID %>" value="<%= colonia.getId() %>"/>
 
                                 <input class="btn btn-danger" type="submit" value="Eliminar"/>
                             </form>

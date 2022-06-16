@@ -19,7 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletMunicipios", urlPatterns = {"/municipios"})
+@WebServlet(name = "ServletMunicipios", urlPatterns = {"/datos-municipios"})
 public class ServletMunicipios extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
@@ -40,6 +40,7 @@ public class ServletMunicipios extends HttpServlet
         mEstadosDAO = new EstadoDAO(mPoolConexionesDB);
     }
 
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -69,7 +70,7 @@ public class ServletMunicipios extends HttpServlet
             accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
         }
         
-        obtenerListaDatos(req, res, idMunicipio, accion);
+        mostrarVistaConDatos(req, res, idMunicipio, accion);
     }
 
     /**
@@ -147,11 +148,11 @@ public class ServletMunicipios extends HttpServlet
             
         } finally 
         {
-            obtenerListaDatos(req, res, null, Accion.LEER);
+            mostrarVistaConDatos(req, res, null, Accion.LEER);
         }
     }
     
-    private void obtenerListaDatos(HttpServletRequest req, HttpServletResponse res, 
+    private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
             String idMunicipio, Accion accion) 
             throws ServletException, IOException
     {
@@ -200,6 +201,7 @@ public class ServletMunicipios extends HttpServlet
         }
     }
 
+
     /**
      * Returns a short description of the servlet.
      *
@@ -208,7 +210,7 @@ public class ServletMunicipios extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Acceso y modificación de municipios.";
-    }
+        return "Short description";
+    }// </editor-fold>
 
 }

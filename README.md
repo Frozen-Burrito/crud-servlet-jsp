@@ -24,11 +24,13 @@ Esto debería crear el directorio `sistema-crud`, que puede ser abierto como un 
 
 Hace falta configurar la BD misma desde XAMPP y agregar configuración al proyecto de NetBeans para poder lograr que se conecte a la BD.
 
-1. Descargar el archivo `.sql` de la BD (que está en el drive, para Belén) e importarlo desde phpMyAdmin:
+1. Crear una base de datos nueva en phpMyAdmin.
+
+2. Descargar el archivo `.sql` de la BD (que está en el drive, para Belén) e importarlo en la base de datos nueva en phpMyAdmin:
 
 ![image](https://user-images.githubusercontent.com/59635185/173942695-127b60a9-b270-4ad4-86b0-d6dd0a5c357c.png)
 
-2. Asegurar que el usuario local de la base de datos requiere una contraseña (es necesario para la conexión con NetBeans). Si no tiene contraseña, configurarla en la sección "Editar Privilegios" de la página de la base de datos:
+3. Asegurar que el usuario local de la base de datos requiere una contraseña (es necesario para la conexión con NetBeans). Si no tiene contraseña, configurarla en la sección "Editar Privilegios" de la página de la base de datos:
 
 ![image](https://user-images.githubusercontent.com/59635185/173956835-3fc420ad-d05d-4458-9c52-4dca33a1fda2.png)
 

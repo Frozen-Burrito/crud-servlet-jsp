@@ -5,137 +5,72 @@
 <%@ page import="com.rappi.crud.entidades.Pais" %>
 <%@ page import="com.rappi.crud.dao.PaisDAO" %>
 
-<html>
-<head>
-    <title>Países | Vista General</title>
-</head>
-<style>
-
-    * {
-        font-family: "Roboto Thin", sans-serif;
-    }
-
-    .contenedor {
-        max-width: 80vw;
-        margin: 2rem auto;
-    }
-
-    .contenedor.row {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .btn {
-        font-size: 18px;
-        font-weight: 400;
-        text-align: center;
-        outline: none;
-        border: none;
-        padding: 0.6rem 1.4rem;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-
-    button.btn-primario, input.btn-primario {
-        background-color: #007bff;
-        color: #ffffff;
-    }
-
-    button.btn-error, input.btn-error {
-        background-color: #dc3545;
-        color: #ffffff;
-    }
-
-    td.td-acciones {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-around;
-        align-items: center;
-        gap: 16px;
-    }
-
-    @media (min-width: 1224px) {
-        .contenedor {
-            max-width: 1200px;
-        }
-    }
-
-    table {
-        border-collapse: collapse;
-    }
-
-    tr.table-header {
-        border-bottom: 1px solid black;
-    }
-    
-    td.td-acciones > a.btn-editar {
-        background-color: #f0ab00;
-        color: #ffffff;
-        font-size: 18px;
-        font-weight: 400;
-        text-align: center;
-        outline: none;
-        border: none;
-        padding: 0.6rem 1.4rem;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-
-</style>
 <%
     List<Pais> paises = (List<Pais>) request.getAttribute("paises");
 %>
+
+<html>
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+
+    <title>Países | Vista General</title>
+</head>
 <body>
-
-<header>
-    <div class="contenedor row">
-        <h1>Países</h1>
-
-        <button class="btn btn-primario" value="Nuevo" onclick="window.location.href='paises/formulario.jsp'">
-            Nuevo
-        </button>
-    </div>
-</header>
-
-<div class="contenedor">
-    <table>
-        <tr class="table-header">
-            <th>Código de País</th>
-            <th>Nombre</th>
-            <th>Acciones</th>
-        </tr>
-
-        <% for (Pais pais : paises) { %>
-            <tr>
-                <td>
-                    <a href="${pageContext.request.contextPath}/paises?<%= PaisDAO.COLUMNA_ID %>=<%= pais.getCodigoPais()%>">
-                        <%= pais.getCodigoPais()%>
-                    </a>
-                </td>
-
-                <td><%= pais.getNombre() %></td>
-
-                <td class="td-acciones">
-                    <a 
-                        class="btn-editar" 
-                        href="${pageContext.request.contextPath}/paises?<%= PaisDAO.COLUMNA_ID %>=<%= pais.getCodigoPais() %>">
-                        Editar
-                    </a>
-
-                    <!-- TODO: Usar DELETE para esto. -->
-                    <form method="POST" action="${pageContext.request.contextPath}/paises">
-                        <input type="hidden" name="accion" value="${Accion.ELIMINAR.toString()}" />
-                        <input type="hidden" name="<%= PaisDAO.COLUMNA_ID %>" value="<%= pais.getCodigoPais() %>"/>
-
-                        <input class="btn btn-error" type="submit" value="Eliminar"/>
-                    </form>
-                </td>
+    <section class="container">
+        
+        <div class="row my-5">
+            <div class="col">
+                <h1>Países</h1>
+            </div>
+            <div class="col-8">
+            </div>
+            <div class="col">
+                <button class="btn btn-primary" value="Nuevo" onclick="window.location.href='paises/formulario.jsp'">
+                    Nuevo
+                </button>
+            </div>
+        </div>
+        
+        <table class="table table-hover">
+            <tr class="table-header">
+                <th scope="col">Código de País</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Acciones</th>
             </tr>
-        <% } %>
-    </table>
-</div>
+
+            <% for (Pais pais : paises) { %>
+                <tr>
+                    <th scope="row">
+                        <a href="${pageContext.request.contextPath}/paises?<%= PaisDAO.COLUMNA_ID %>=<%= pais.getCodigoPais()%>">
+                            <%= pais.getCodigoPais()%>
+                        </a>
+                    </th>
+
+                    <td><%= pais.getNombre() %></td>
+
+                    <td class="td-acciones">
+                        <div class="hstack gap-3">
+                            <a 
+                                class="btn btn-warning"
+                                href="${pageContext.request.contextPath}/paises?<%= PaisDAO.COLUMNA_ID %>=<%= pais.getCodigoPais() %>">
+                                Editar
+                            </a>
+
+                            <!-- TODO: Usar DELETE para esto. -->
+                            <form method="POST" action="${pageContext.request.contextPath}/paises" style="margin-bottom: 0px">
+                                <input type="hidden" name="accion" value="${Accion.ELIMINAR.toString()}" />
+                                <input type="hidden" name="<%= PaisDAO.COLUMNA_ID %>" value="<%= pais.getCodigoPais() %>"/>
+
+                                <input class="btn btn-danger" type="submit" value="Eliminar"/>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            <% } %>
+        </table>
+    </section>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
 
 </body>
 </html>

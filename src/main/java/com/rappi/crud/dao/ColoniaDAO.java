@@ -143,7 +143,7 @@ public class ColoniaDAO
         final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
                 " SET " + 
                 COLUMNA_NOMBRE + " = ?, " + 
-                COLUMNA_CODIGO_POSTAL + " = ? " + 
+                COLUMNA_CODIGO_POSTAL + " = ?, " + 
                 COLUMNA_ID_MUNICIPIO + " = ? " + 
                 "WHERE " + COLUMNA_ID + " = ?";
 

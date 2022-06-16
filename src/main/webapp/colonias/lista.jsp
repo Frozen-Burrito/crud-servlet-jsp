@@ -10,7 +10,7 @@
     
     final String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
     
-    String urlBase = "colonias";
+    String urlBase = request.getContextPath() + "/datos-colonias";
     
     final String formatoUrlAccion = "%s?%s=%s";
     
@@ -39,7 +39,7 @@
             <div class="col">
                 <a 
                     class="btn btn-primary"
-                    href="${pageContext.request.contextPath}/<%= urlNuevo %>"
+                    href="<%= urlNuevo %>"
                 >
                     Nuevo
                 </a>
@@ -58,23 +58,24 @@
             <% for (Colonia colonia : colonias) { %>
                 <tr>
                     <th scope="row">                        
-                        <a href="${pageContext.request.contextPath}/<%= urlDetalles %>&<%= ColoniaDAO.COLUMNA_ID %>=<%= colonia.getId() %>">
+                        <a href="<%= urlDetalles %>&<%= ColoniaDAO.COLUMNA_ID %>=<%= colonia.getId() %>">
                             <%= colonia.getId() %>
                         </a>
                     </th>
 
                     <td><%= colonia.getNombre() %></td>
                     <td><%= colonia.getCodigoPostal() %></td>
+                    <td><%= colonia.getIdMunicipio()%></td>
 
                     <td class="td-acciones">
                         <div class="hstack gap-3">
                             <a 
                                 class="btn btn-warning"
-                                href="${pageContext.request.contextPath}/<%= urlEditar %>&<%= ColoniaDAO.COLUMNA_ID %>=<%= colonia.getId() %>">
+                                href="<%= urlEditar %>&<%= ColoniaDAO.COLUMNA_ID %>=<%= colonia.getId() %>">
                                 Editar
                             </a>
 
-                            <form method="POST" action="${pageContext.request.contextPath}/estados" style="margin-bottom: 0px">
+                            <form method="POST" action="<%= urlBase %>" style="margin-bottom: 0px">
                                 <input type="hidden" name="<%= keyParamAccion %>" value="<%= Accion.ELIMINAR.toString() %>" />
                                 <input type="hidden" name="<%= ColoniaDAO.COLUMNA_ID %>" value="<%= colonia.getId() %>"/>
 

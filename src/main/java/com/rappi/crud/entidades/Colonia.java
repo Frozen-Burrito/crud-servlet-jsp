@@ -76,10 +76,12 @@ public class Colonia
         
         String idMunicipioStr = campos.get(ColoniaDAO.COLUMNA_ID_MUNICIPIO);
         
+        System.out.println("ID municipio: " );
+        
         if (idMunicipioStr != null)
         {
             int idMunicipio = Integer.parseInt(idMunicipioStr);
-            colonia.setCodigoPostal(idMunicipio);
+            colonia.setmIdMunicipio(idMunicipio);
         }
     
         // Retornar nueva instancia de la entidad.

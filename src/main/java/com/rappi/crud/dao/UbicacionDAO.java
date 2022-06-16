@@ -89,6 +89,7 @@ public class UbicacionDAO
                 resultados.getInt(COLUMNA_NUM_INTERIOR),
                 resultados.getInt(COLUMNA_ID_COLONIA)
             );
+            System.out.println("Ubicacion: " + ubicacion.getNombreCalle() + ", " + ubicacion.getNumExterior());
 
             return ubicacion;
         }

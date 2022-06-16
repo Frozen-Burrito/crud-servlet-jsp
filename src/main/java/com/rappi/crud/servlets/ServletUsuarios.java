@@ -1,12 +1,9 @@
 package com.rappi.crud.servlets;
 
-import com.rappi.crud.dao.ColoniaDAO;
-import com.rappi.crud.dao.MunicipioDAO;
 import com.rappi.crud.dao.UbicacionDAO;
-import com.rappi.crud.entidades.Colonia;
-import com.rappi.crud.entidades.Estado;
-import com.rappi.crud.entidades.Municipio;
+import com.rappi.crud.dao.UsuarioDAO;
 import com.rappi.crud.entidades.Ubicacion;
+import com.rappi.crud.entidades.Usuario;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -23,47 +20,46 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletUbicaciones", urlPatterns = {"/ubicaciones"})
-public class ServletUbicaciones extends HttpServlet
+@WebServlet(name = "ServletUsuarios", urlPatterns = {"/usuarios"})
+public class ServletUsuarios extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
     private DataSource mPoolConexionesDB;
     
-    private static final Logger mLogger = Logger.getLogger(ServletMunicipios.class.getName());
+    private static final Logger mLogger = Logger.getLogger(ServletColonias.class.getName());
+    
+    private UsuarioDAO mUsuarioDAO;
     
     private UbicacionDAO mUbicacionDAO;
-    
-    private ColoniaDAO mColoniaDAO;
     
     @Override
     public void init() throws ServletException
     {
         super.init();
 
+        mUsuarioDAO = new UsuarioDAO(mPoolConexionesDB);
         mUbicacionDAO = new UbicacionDAO(mPoolConexionesDB);
-        mColoniaDAO = new ColoniaDAO(mPoolConexionesDB);
     }
-    
 
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param req servlet request
-     * @param res servlet response
+     * @param request servlet request
+     * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse res)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException
     {
-        Map<String, String[]> parametros = req.getParameterMap();
+        Map<String, String[]> parametros = request.getParameterMap();
         
-        String idUbicacionStr = null;
+        String nombreDeUsuario = null;
         
-        if (parametros.get(UbicacionDAO.COLUMNA_ID) != null)
+        if (parametros.get(UsuarioDAO.COLUMNA_ID) != null)
         {
-            idUbicacionStr = parametros.get(UbicacionDAO.COLUMNA_ID)[0];
+            nombreDeUsuario = parametros.get(UsuarioDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = Accion.LEER;
@@ -74,7 +70,7 @@ public class ServletUbicaciones extends HttpServlet
             accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
         }
         
-        mostrarVistaConDatos(req, res, idUbicacionStr, accion);
+        mostrarVistaConDatos(request, response, nombreDeUsuario, accion);
     }
 
     /**
@@ -91,13 +87,14 @@ public class ServletUbicaciones extends HttpServlet
     {
         Map<String, String[]> parametros = request.getParameterMap();
         
-        String idUbicacionStr = null;
+        String nombreDeUsuario = null;
         
-        if (parametros.get(UbicacionDAO.COLUMNA_ID) != null)
+        if (parametros.get(UsuarioDAO.COLUMNA_ID) != null)
         {
-            idUbicacionStr = parametros.get(UbicacionDAO.COLUMNA_ID)[0];
+            nombreDeUsuario = parametros.get(UsuarioDAO.COLUMNA_ID)[0];
         }
         
+        // Obtener el tipo de operación CRUD que va a realizarse.
         Accion accion = Accion.CREAR;
         String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
         
@@ -106,14 +103,14 @@ public class ServletUbicaciones extends HttpServlet
             accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
         }
         
-        Ubicacion datosRecibidos = null;
+        Usuario datosRecibidos = null;
         
         // Obtener datos del formulario si la accion es CREAR o ACTUALIZAR.
         if (!accion.equals(Accion.ELIMINAR))
         {
             try 
             {
-                datosRecibidos = Ubicacion.desdeParametros(parametros);
+                datosRecibidos = Usuario.desdeParametros(parametros);
 
             } catch (NullPointerException | NumberFormatException e)
             {
@@ -122,15 +119,13 @@ public class ServletUbicaciones extends HttpServlet
             }
         }
         
-        System.out.println("Accion: " + accion);
-            
         // Realizar la accion CUD determinada.
         try 
         {
             switch (accion) 
             {
                 case CREAR:
-                    int idInsertado = mUbicacionDAO.insertar(datosRecibidos);
+                    int idInsertado = mUsuarioDAO.insertar(datosRecibidos);
                     
                     if (idInsertado >= 0) 
                     {
@@ -138,11 +133,11 @@ public class ServletUbicaciones extends HttpServlet
                     }
                     break;
                 case ACTUALIZAR:
-                    mUbicacionDAO.actualizar(datosRecibidos);
+                    mUsuarioDAO.actualizar(datosRecibidos);
                     break;
                 case ELIMINAR:
-                    int id = Integer.parseInt(idUbicacionStr);
-                    mUbicacionDAO.eliminar(id);
+                    int id = Integer.parseInt(nombreDeUsuario);
+                    mUsuarioDAO.eliminar(id);
                     break;
             }
             
@@ -152,76 +147,78 @@ public class ServletUbicaciones extends HttpServlet
             
         } finally 
         {
+            // Redirigir al usuario para mostrar los resultados de la operacion.
             mostrarVistaConDatos(request, response, null, Accion.LEER);
         }
     }
     
     private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
-            String idUbicacionStr, Accion accion) 
-            throws ServletException, IOException
+        String idUsuarioStr, Accion accion) 
+        throws ServletException, IOException
     {
         try
         {
             req.setAttribute("accion", accion);
 
-            if (idUbicacionStr != null || accion.equals(Accion.CREAR))
+            if (idUsuarioStr != null || accion.equals(Accion.CREAR))
             {
-                if (idUbicacionStr != null) 
+                if (idUsuarioStr != null) 
                 {
-                    int id = Integer.parseInt(idUbicacionStr);
-                    
                     // Obtener un registro especifico de la BD.                               
-                    Ubicacion ubicacion = mUbicacionDAO.getUbicacionPorId(id);
+                    Usuario usuario = mUsuarioDAO.getUsuarioPorID(idUsuarioStr);
                     
-                    req.setAttribute("ubicacion", ubicacion);
+                    req.setAttribute("usuario", usuario);
                 }
                 
                 // Obtener entidades relacionadas de la BD.
-                List<Colonia> colonias = mColoniaDAO.getColonias();
+                List<Ubicacion> ubicaciones = mUbicacionDAO.getUbicaciones();
                 
-                req.setAttribute("colonias", colonias);
+                req.setAttribute("ubicaciones", ubicaciones);
+                
+                // Determinar el título 
+                String encabezadoVista = Usuario.tituloVistaConAccion(accion);
+                
+                req.setAttribute("encabezadoVista", encabezadoVista);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/ubicaciones/formulario.jsp");
-               
-                System.out.println(requestDispatcher == null);
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/usuarios/formulario.jsp");
 
                 requestDispatcher.forward(req, res);
                 
             } else 
             {
                 // Obtener todos los registros disponibles.
-                List<Ubicacion> ubicaciones = mUbicacionDAO.getUbicaciones();
+                List<Usuario> usuarios = mUsuarioDAO.getUsuarios();
+                                
+                // Obtener la ubicacion para cada usuario.
+                Map<Integer, Ubicacion> ubicacionesUsuarios = new HashMap<>();
                 
-                // Obtener la colonia para cada ubicacion.
-                Map<Integer, Colonia> coloniasDeUbicacion = new HashMap<>();
-                
-                for (Ubicacion ubicacion : ubicaciones)
+                for (Usuario usuario : usuarios)
                 {
-                    int idColonia = ubicacion.getIdColonia();
+                    int idUbicacion = usuario.getIdUbicacion();
                     
-                    if (coloniasDeUbicacion.containsKey(idColonia)) 
+                    if (ubicacionesUsuarios.containsKey(idUbicacion)) 
                     {
                         // Si ya fue obtenida la ubicacion, solo hacer referencia a ella.
-                        Colonia colonia = coloniasDeUbicacion.get(idColonia);
-                        ubicacion.setColonia(colonia);
+                        Ubicacion ubicacion = ubicacionesUsuarios.get(idUbicacion);
+                        usuario.setUbicacion(ubicacion);
                     }
                     else 
                     {
                         // Si la ubicación no se ha obtenido de la BD, obtenerla y 
                         // registrarla en el mapa.
-                        Colonia colonia = mColoniaDAO.getColoniaPorId(idColonia);
+                        Ubicacion ubicacion = mUbicacionDAO.getUbicacionPorId(idUbicacion);
                         
-                        if (colonia != null)
+                        if (ubicacion != null)
                         {
-                            coloniasDeUbicacion.put(idColonia, colonia);
-                            ubicacion.setColonia(colonia);
+                            ubicacionesUsuarios.put(idUbicacion, ubicacion);
+                            usuario.setUbicacion(ubicacion);
                         }
                     }
                 }
                 
-                req.setAttribute("ubicaciones", ubicaciones);
+                req.setAttribute("usuarios", usuarios);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/ubicaciones/lista.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/usuarios/lista.jsp");
 
                 requestDispatcher.forward(req, res);
             }
@@ -241,6 +238,5 @@ public class ServletUbicaciones extends HttpServlet
     public String getServletInfo()
     {
         return "Short description";
-    }// </editor-fold>
-
+    }
 }

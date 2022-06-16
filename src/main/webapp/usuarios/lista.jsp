@@ -1,3 +1,7 @@
+<%@page import="java.util.stream.Collectors"%>
+<%@page import="java.util.stream.Stream"%>
+<%@page import="com.rappi.crud.dao.UsuarioDAO"%>
+<%@page import="com.rappi.crud.entidades.Usuario"%>
 <%@page import="com.rappi.crud.dao.UbicacionDAO"%>
 <%@page import="com.rappi.crud.entidades.Ubicacion"%>
 <%@ page import="java.util.List"%>
@@ -7,33 +11,33 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
-    List<Ubicacion> ubicaciones = (List<Ubicacion>) request.getAttribute("ubicaciones");
+    List<Usuario> usuarios = (List<Usuario>) request.getAttribute("usuarios");
+    
+    System.out.println("Cantidad de usuarios: " + usuarios.size());
     
     final String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
     
-    String urlBase = request.getContextPath() + "/ubicaciones";
+    String urlBase = request.getContextPath() + "/usuarios";
     
     final String formatoUrlAccion = "%s?%s=%s";
     
     String urlDetalles = String.format(formatoUrlAccion, urlBase, keyParamAccion, Accion.LEER);
     String urlNuevo = String.format(formatoUrlAccion, urlBase, keyParamAccion, Accion.CREAR);
     String urlEditar = String.format(formatoUrlAccion, urlBase, keyParamAccion, Accion.ACTUALIZAR);
-    
-    System.out.println(urlDetalles);
 %>
 
 <html>
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
 
-    <title><%= Ubicacion.NOMBRE_ENTIDAD %> | Vista General</title>
+    <title><%= Usuario.NOMBRE_ENTIDAD %> | Vista General</title>
 </head>
 <body>
     <section class="container">
         
         <div class="row my-5">
             <div class="col">
-                <h1><%= Ubicacion.NOMBRE_ENTIDAD %></h1>
+                <h1><%= Usuario.NOMBRE_ENTIDAD %></h1>
             </div>
             <div class="col-8">
             </div>
@@ -49,39 +53,43 @@
         
         <table class="table table-hover">
             <tr class="table-header">
-                <th scope="col">ID</th>
-                <th scope="col">Nombre de la Calle</th>
-                <th scope="col">Número Exterior</th>
-                <th scope="col">Número Interior</th>
-                <th scope="col">Colonia</th>
+                <th scope="col">Nombre de Usuario</th>
+                <th scope="col">Password</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">E-mail</th>
+                <th scope="col">Número Telefónico</th>
+                <th scope="col">Domicilio</th>
                 <th scope="col">Acciones</th>
             </tr>
 
-            <% for (Ubicacion ubicacion : ubicaciones) { %>
+            <% for (Usuario usuario : usuarios) { %>
                 <tr>
                     <th scope="row">                        
-                        <a href="<%= urlDetalles %>&<%= UbicacionDAO.COLUMNA_ID %>=<%= ubicacion.getId() %>">
-                            <%= ubicacion.getId() %>
+                        <a href="<%= urlDetalles %>&<%= UsuarioDAO.COLUMNA_ID %>=<%= usuario.getNombreUsuario()%>">
+                            <%= usuario.getNombreUsuario() %>
                         </a>
                     </th>
 
-                    <td><%= ubicacion.getNombreCalle()%></td>
-                    <td><%= ubicacion.getNumExterior()%></td>
-                    <td><%= ubicacion.getNumInterior()%></td>
+                    <td><%= usuario.getPasswordOfuscado() %></td>
+                    <td><%= usuario.getTipoDeUsuario().toString() %></td>
+                    <td><%= usuario.getEmail() %></td>
+                    <td><%= usuario.getNumTelefono() %></td>
                     
-                    <td><%= ubicacion.getColonia() != null ? ubicacion.getColonia().getNombre() : "No se encontró la colonia de la ubicación"%></td>
+                    <td>
+                        <%= usuario.getUbicacion() != null ? usuario.getUbicacion().toString() : "No se encontró el domicilio registrado" %>
+                    </td>
 
                     <td class="td-acciones">
                         <div class="hstack gap-3">
                             <a 
                                 class="btn btn-warning"
-                                href="<%= urlEditar %>&<%= UbicacionDAO.COLUMNA_ID %>=<%= ubicacion.getId() %>">
+                                href="<%= urlEditar %>&<%= UsuarioDAO.COLUMNA_ID %>=<%= usuario.getNombreUsuario()%>">
                                 Editar
                             </a>
 
                             <form method="POST" action="<%= urlBase %>" style="margin-bottom: 0px">
                                 <input type="hidden" name="<%= keyParamAccion %>" value="<%= Accion.ELIMINAR.toString() %>" />
-                                <input type="hidden" name="<%= UbicacionDAO.COLUMNA_ID %>" value="<%= ubicacion.getId() %>"/>
+                                <input type="hidden" name="<%= UsuarioDAO.COLUMNA_ID %>" value="<%= usuario.getNombreUsuario() %>"/>
 
                                 <input class="btn btn-danger" type="submit" value="Eliminar"/>
                             </form>

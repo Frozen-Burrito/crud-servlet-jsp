@@ -32,7 +32,7 @@ public class Ubicacion
         this.mId = id;
         this.mNombreCalle = nombreCalle;
         this.mNumExterior = numeroExterior;
-        this.mNumExterior = numeroInterior;
+        this.mNumInterior = numeroInterior;
         this.mIdColonia = idColonia;
     }
     
@@ -96,7 +96,7 @@ public class Ubicacion
     @Override
     public String toString()
     {
-        return "Ubicacion{" + "mId=" + mId + ", mNombreCalle=" + mNombreCalle + ", mNumExterior=" + mNumExterior + ", mNumInterior=" + mNumInterior + ", mIdColonia=" + mIdColonia + ", mColonia=" + mColonia + '}';
+        return String.format("%s, #%s-%s", mNombreCalle, mNumExterior, mNumInterior);
     }
     
     public int getId() 

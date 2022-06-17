@@ -1,6 +1,5 @@
 package com.rappi.crud.dao;
 
-import com.rappi.crud.entidades.Ubicacion;
 import com.rappi.crud.entidades.Usuario;
 import com.rappi.crud.servlets.TipoDeUsuario;
 import java.sql.Connection;
@@ -101,6 +100,24 @@ public class UsuarioDAO
         return null;
     }
     
+    public boolean iniciarSesion(String nombreUsuario, String password) throws SQLException
+    {
+        Connection conexion = mDataSource.getConnection();
+        
+        final String queryPorCredenciales = "SELECT * FROM " + NOMBRE_TABLA 
+            + " WHERE " + COLUMNA_ID + " = ? AND " + COLUMNA_PASSWORD + " = ?";
+        
+        PreparedStatement stmt = conexion.prepareStatement(queryPorCredenciales);
+        stmt.setString(1, nombreUsuario);
+        stmt.setString(2, password);
+
+        ResultSet resultados = stmt.executeQuery();
+        
+        boolean credencialesCorrectas = resultados.next();
+
+        return credencialesCorrectas;
+    }
+    
     /**
      * Intenta insertar un nuevo registro de Usuario en la BD.
      * 
@@ -131,17 +148,9 @@ public class UsuarioDAO
         stmt.setString(5, nuevoUsuario.getNumTelefono());
         stmt.setInt(6, nuevoUsuario.getIdUbicacion());
 
-        stmt.executeUpdate();
+        int filasModificadas = stmt.executeUpdate();
 
-        ResultSet resultados = stmt.getGeneratedKeys();
-
-        if (resultados.next())
-        {
-            System.out.println("Insertado");
-            return resultados.getInt(1);
-        }
-
-        return -1;
+        return filasModificadas;
     }
 
     /**

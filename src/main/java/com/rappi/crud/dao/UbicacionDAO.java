@@ -36,9 +36,7 @@ public class UbicacionDAO
     {
         List<Ubicacion> lista = new ArrayList<>();
         
-        Connection conexion = mDataSource.getConnection();
-        
-        if (conexion != null)
+        try (Connection conexion = mDataSource.getConnection())
         {
             final String query = "SELECT * FROM " + NOMBRE_TABLA;
 
@@ -54,12 +52,16 @@ public class UbicacionDAO
                     resultados.getInt(COLUMNA_NUM_INTERIOR),
                     resultados.getInt(COLUMNA_ID_COLONIA)
                 );
-                
+
                 lista.add(ubicacion);
             }
-        }
 
-        return lista;
+            return lista;
+            
+        } catch (SQLException e)
+        {
+            throw e;
+        } 
     }
     
     /**
@@ -70,31 +72,36 @@ public class UbicacionDAO
      * @throws SQLException 
      */
     public Ubicacion getUbicacionPorId(int id) throws SQLException
-    {
-        Connection conexion = mDataSource.getConnection();
-        
-        final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
-        
-        PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
-        stmt.setInt(1, id);
-
-        ResultSet resultados = stmt.executeQuery();
-
-        if (resultados.next())
+    {        
+        try (Connection conexion = mDataSource.getConnection()) 
         {
-            final Ubicacion ubicacion = new Ubicacion(
-                resultados.getInt(COLUMNA_ID),
-                resultados.getString(COLUMNA_CALLE),
-                resultados.getInt(COLUMNA_NUM_EXTERIOR),
-                resultados.getInt(COLUMNA_NUM_INTERIOR),
-                resultados.getInt(COLUMNA_ID_COLONIA)
-            );
-            System.out.println("Ubicacion: " + ubicacion.getNombreCalle() + ", " + ubicacion.getNumExterior());
+            final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
 
-            return ubicacion;
+            PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
+            stmt.setInt(1, id);
+
+            ResultSet resultados = stmt.executeQuery();
+        
+            if (resultados.next())
+            {
+                final Ubicacion ubicacion = new Ubicacion(
+                    resultados.getInt(COLUMNA_ID),
+                    resultados.getString(COLUMNA_CALLE),
+                    resultados.getInt(COLUMNA_NUM_EXTERIOR),
+                    resultados.getInt(COLUMNA_NUM_INTERIOR),
+                    resultados.getInt(COLUMNA_ID_COLONIA)
+                );
+                System.out.println("Ubicacion: " + ubicacion.getNombreCalle() + ", " + ubicacion.getNumExterior());
+
+                return ubicacion;
+            }
+
+            return null;
+            
+        } catch (SQLException e)
+        {
+            throw e;
         }
-
-        return null;
     }
     
     /**
@@ -106,33 +113,38 @@ public class UbicacionDAO
      */
     public int insertar(Ubicacion nuevaUbicacion) throws SQLException
     {
-        Connection connection = mDataSource.getConnection();
-        
-        final String queryCrear = "INSERT INTO " + NOMBRE_TABLA 
+        try (Connection conexion = mDataSource.getConnection())
+        {
+            final String queryCrear = "INSERT INTO " + NOMBRE_TABLA 
                 + " (" + COLUMNA_CALLE + ", " + 
                 COLUMNA_NUM_EXTERIOR + ", " + 
                 COLUMNA_NUM_INTERIOR + ", " + 
                 COLUMNA_ID_COLONIA 
                 + ") VALUES(?, ?, ?, ?)";
 
-        PreparedStatement stmt = connection.prepareStatement(queryCrear, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement stmt = conexion.prepareStatement(queryCrear, Statement.RETURN_GENERATED_KEYS);
 
-        stmt.setString(1, nuevaUbicacion.getNombreCalle());
-        stmt.setInt(2, nuevaUbicacion.getNumExterior());
-        stmt.setInt(3, nuevaUbicacion.getNumInterior());
-        stmt.setInt(4, nuevaUbicacion.getIdColonia());
+            stmt.setString(1, nuevaUbicacion.getNombreCalle());
+            stmt.setInt(2, nuevaUbicacion.getNumExterior());
+            stmt.setInt(3, nuevaUbicacion.getNumInterior());
+            stmt.setInt(4, nuevaUbicacion.getIdColonia());
 
-        stmt.executeUpdate();
+            stmt.executeUpdate();
 
-        ResultSet resultados = stmt.getGeneratedKeys();
+            ResultSet resultados = stmt.getGeneratedKeys();
 
-        if (resultados.next())
+            if (resultados.next())
+            {
+                System.out.println("Insertado");
+                return resultados.getInt(1);
+            }
+
+            return -1;
+        
+        } catch (SQLException e)
         {
-            System.out.println("Insertado");
-            return resultados.getInt(1);
+            throw e;
         }
-
-        return -1;
     }
 
     /**
@@ -143,25 +155,30 @@ public class UbicacionDAO
      */
     public void actualizar(Ubicacion modificaciones) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
-        
-        final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
+        try (Connection conexion = mDataSource.getConnection())
+        {
+            final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
                 " SET " + 
                 COLUMNA_CALLE + " = ?, " + 
-                COLUMNA_NUM_EXTERIOR + " = ? " + 
-                COLUMNA_NUM_INTERIOR + " = ? " + 
+                COLUMNA_NUM_EXTERIOR + " = ?, " + 
+                COLUMNA_NUM_INTERIOR + " = ?, " + 
                 COLUMNA_ID_COLONIA + " = ? " + 
                 "WHERE " + COLUMNA_ID + " = ?";
 
-        PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
+            PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
 
-        stmt.setString(1, modificaciones.getNombreCalle());
-        stmt.setInt(2, modificaciones.getNumExterior());
-        stmt.setInt(3, modificaciones.getNumInterior());
-        stmt.setInt(4, modificaciones.getIdColonia());
-        stmt.setInt(5, modificaciones.getId());
+            stmt.setString(1, modificaciones.getNombreCalle());
+            stmt.setInt(2, modificaciones.getNumExterior());
+            stmt.setInt(3, modificaciones.getNumInterior());
+            stmt.setInt(4, modificaciones.getIdColonia());
+            stmt.setInt(5, modificaciones.getId());
 
-        stmt.executeUpdate();
+            stmt.executeUpdate();
+            
+        } catch (SQLException e) 
+        {
+            throw e;
+        }
     }
 
     /**
@@ -172,15 +189,19 @@ public class UbicacionDAO
      */
     public void eliminar(int id) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
-        
-        final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
-                                    + " WHERE " + COLUMNA_ID + " = ?";
-        
-        PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
+        try (Connection conexion = mDataSource.getConnection())
+        {
+            final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
+                                        + " WHERE " + COLUMNA_ID + " = ?";
 
-        stmt.setInt(1, id);
+            PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
 
-        stmt.executeUpdate();
+            stmt.setInt(1, id);
+
+            stmt.executeUpdate();
+        } catch (SQLException e)
+        {
+            throw e;
+        }
     }
 }

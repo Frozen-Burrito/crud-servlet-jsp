@@ -2,14 +2,11 @@ package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.RestauranteDAO;
 import com.rappi.crud.dao.ReviewDAO;
-import com.rappi.crud.dao.UbicacionDAO;
 import com.rappi.crud.dao.UsuarioDAO;
 import com.rappi.crud.entidades.Restaurante;
 import com.rappi.crud.entidades.Review;
-import com.rappi.crud.entidades.Ubicacion;
 import com.rappi.crud.entidades.Usuario;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletReviews", urlPatterns = {"/reviews"})
+@WebServlet(name = "ServletReviews", urlPatterns = {"/app/reviews"})
 public class ServletReviews extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
@@ -38,6 +35,9 @@ public class ServletReviews extends HttpServlet
     private RestauranteDAO mRestauranteDAO;
     
     private UsuarioDAO mUsuarioDAO;
+    
+    private static final String VISTA_LISTA = "/app/reviews/lista.jsp";
+    private static final String VISTA_FORMULARIO = "/app/reviews/formulario.jsp";
     
     @Override
     public void init() throws ServletException
@@ -182,7 +182,7 @@ public class ServletReviews extends HttpServlet
                 
                 req.setAttribute("encabezadoVista", encabezadoVista);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/reviews/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
                 requestDispatcher.forward(req, res);
                 
@@ -239,7 +239,7 @@ public class ServletReviews extends HttpServlet
                 
                 req.setAttribute("reviews", reviews);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/reviews/lista.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
 
                 requestDispatcher.forward(req, res);
             }

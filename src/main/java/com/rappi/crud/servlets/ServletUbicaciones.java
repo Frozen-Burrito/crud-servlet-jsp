@@ -1,11 +1,15 @@
 package com.rappi.crud.servlets;
 
-import com.rappi.crud.dao.EstadoDAO;
-import com.rappi.crud.dao.PaisDAO;
+import com.rappi.crud.dao.ColoniaDAO;
+import com.rappi.crud.dao.MunicipioDAO;
+import com.rappi.crud.dao.UbicacionDAO;
+import com.rappi.crud.entidades.Colonia;
 import com.rappi.crud.entidades.Estado;
-import com.rappi.crud.entidades.Pais;
+import com.rappi.crud.entidades.Municipio;
+import com.rappi.crud.entidades.Ubicacion;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -19,26 +23,27 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletEstados", urlPatterns = {"/estados"})
-public class ServletEstados extends HttpServlet
+@WebServlet(name = "ServletUbicaciones", urlPatterns = {"/ubicaciones"})
+public class ServletUbicaciones extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
     private DataSource mPoolConexionesDB;
     
-    private static final Logger mLogger = Logger.getLogger(ServletEstados.class.getName());
+    private static final Logger mLogger = Logger.getLogger(ServletMunicipios.class.getName());
     
-    private EstadoDAO mEstadoDAO;
+    private UbicacionDAO mUbicacionDAO;
     
-    private PaisDAO mPaisesDAO;
+    private ColoniaDAO mColoniaDAO;
     
     @Override
     public void init() throws ServletException
     {
         super.init();
 
-        mEstadoDAO = new EstadoDAO(mPoolConexionesDB);
-        mPaisesDAO = new PaisDAO(mPoolConexionesDB);
+        mUbicacionDAO = new UbicacionDAO(mPoolConexionesDB);
+        mColoniaDAO = new ColoniaDAO(mPoolConexionesDB);
     }
+    
 
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -54,11 +59,11 @@ public class ServletEstados extends HttpServlet
     {
         Map<String, String[]> parametros = req.getParameterMap();
         
-        String idEstado = null;
+        String idUbicacionStr = null;
         
-        if (parametros.get(EstadoDAO.COLUMNA_ID) != null)
+        if (parametros.get(UbicacionDAO.COLUMNA_ID) != null)
         {
-            idEstado = parametros.get(EstadoDAO.COLUMNA_ID)[0];
+            idUbicacionStr = parametros.get(UbicacionDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = Accion.LEER;
@@ -69,28 +74,28 @@ public class ServletEstados extends HttpServlet
             accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
         }
         
-        obtenerListaDatos(req, res, idEstado, accion);
+        mostrarVistaConDatos(req, res, idUbicacionStr, accion);
     }
 
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param req servlet request
-     * @param res servlet response
+     * @param request servlet request
+     * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse res)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException
     {
-        Map<String, String[]> parametros = req.getParameterMap();
+        Map<String, String[]> parametros = request.getParameterMap();
         
-        String idEstado = null;
+        String idUbicacionStr = null;
         
-        if (parametros.get(EstadoDAO.COLUMNA_ID) != null)
+        if (parametros.get(UbicacionDAO.COLUMNA_ID) != null)
         {
-            idEstado = parametros.get(EstadoDAO.COLUMNA_ID)[0];
+            idUbicacionStr = parametros.get(UbicacionDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = Accion.CREAR;
@@ -101,14 +106,14 @@ public class ServletEstados extends HttpServlet
             accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
         }
         
-        Estado datosRecibidos = null;
+        Ubicacion datosRecibidos = null;
         
         // Obtener datos del formulario si la accion es CREAR o ACTUALIZAR.
         if (!accion.equals(Accion.ELIMINAR))
         {
             try 
             {
-                datosRecibidos = Estado.desdeParametros(parametros);
+                datosRecibidos = Ubicacion.desdeParametros(parametros);
 
             } catch (NullPointerException | NumberFormatException e)
             {
@@ -125,7 +130,7 @@ public class ServletEstados extends HttpServlet
             switch (accion) 
             {
                 case CREAR:
-                    int idInsertado = mEstadoDAO.insertarEstado(datosRecibidos);
+                    int idInsertado = mUbicacionDAO.insertar(datosRecibidos);
                     
                     if (idInsertado >= 0) 
                     {
@@ -133,11 +138,11 @@ public class ServletEstados extends HttpServlet
                     }
                     break;
                 case ACTUALIZAR:
-                    mEstadoDAO.actualizar(datosRecibidos);
+                    mUbicacionDAO.actualizar(datosRecibidos);
                     break;
                 case ELIMINAR:
-                    int id = Integer.parseInt(idEstado);
-                    mEstadoDAO.eliminar(id);
+                    int id = Integer.parseInt(idUbicacionStr);
+                    mUbicacionDAO.eliminar(id);
                     break;
             }
             
@@ -147,37 +152,36 @@ public class ServletEstados extends HttpServlet
             
         } finally 
         {
-            obtenerListaDatos(req, res, null, Accion.LEER);
+            mostrarVistaConDatos(request, response, null, Accion.LEER);
         }
     }
     
-    private void obtenerListaDatos(HttpServletRequest req, HttpServletResponse res, 
-            String idEstado, Accion accion) 
+    private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
+            String idUbicacionStr, Accion accion) 
             throws ServletException, IOException
     {
-        System.out.println("En doGet");
         try
         {
             req.setAttribute("accion", accion);
 
-            if (idEstado != null || accion.equals(Accion.CREAR))
+            if (idUbicacionStr != null || accion.equals(Accion.CREAR))
             {
-                if (idEstado != null) 
+                if (idUbicacionStr != null) 
                 {
-                    int id = Integer.parseInt(idEstado);
+                    int id = Integer.parseInt(idUbicacionStr);
                     
                     // Obtener un registro especifico de la BD.                               
-                    Estado estado = mEstadoDAO.getEstadoPorId(id);
+                    Ubicacion ubicacion = mUbicacionDAO.getUbicacionPorId(id);
                     
-                    req.setAttribute("estado", estado);
+                    req.setAttribute("ubicacion", ubicacion);
                 }
                 
                 // Obtener entidades relacionadas de la BD.
-                List<Pais> paises = mPaisesDAO.getPaises();
+                List<Colonia> colonias = mColoniaDAO.getColonias();
                 
-                req.setAttribute("paises", paises);
+                req.setAttribute("colonias", colonias);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/estados/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/ubicaciones/formulario.jsp");
                
                 System.out.println(requestDispatcher == null);
 
@@ -186,11 +190,38 @@ public class ServletEstados extends HttpServlet
             } else 
             {
                 // Obtener todos los registros disponibles.
-                List<Estado> estados = mEstadoDAO.getEstados();
+                List<Ubicacion> ubicaciones = mUbicacionDAO.getUbicaciones();
                 
-                req.setAttribute("estados", estados);
+                // Obtener la colonia para cada ubicacion.
+                Map<Integer, Colonia> coloniasDeUbicacion = new HashMap<>();
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/estados/lista.jsp");
+                for (Ubicacion ubicacion : ubicaciones)
+                {
+                    int idColonia = ubicacion.getIdColonia();
+                    
+                    if (coloniasDeUbicacion.containsKey(idColonia)) 
+                    {
+                        // Si ya fue obtenida la ubicacion, solo hacer referencia a ella.
+                        Colonia colonia = coloniasDeUbicacion.get(idColonia);
+                        ubicacion.setColonia(colonia);
+                    }
+                    else 
+                    {
+                        // Si la ubicación no se ha obtenido de la BD, obtenerla y 
+                        // registrarla en el mapa.
+                        Colonia colonia = mColoniaDAO.getColoniaPorId(idColonia);
+                        
+                        if (colonia != null)
+                        {
+                            coloniasDeUbicacion.put(idColonia, colonia);
+                            ubicacion.setColonia(colonia);
+                        }
+                    }
+                }
+                
+                req.setAttribute("ubicaciones", ubicaciones);
+                
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/ubicaciones/lista.jsp");
 
                 requestDispatcher.forward(req, res);
             }
@@ -209,7 +240,7 @@ public class ServletEstados extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Acceso y modificación de países.";
-    }
+        return "Short description";
+    }// </editor-fold>
 
 }

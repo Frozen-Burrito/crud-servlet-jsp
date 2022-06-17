@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletRestaurantes", urlPatterns = {"/restaurantes"})
+@WebServlet(name = "ServletRestaurantes", urlPatterns = {"/app/restaurantes"})
 public class ServletRestaurantes extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
@@ -31,6 +31,9 @@ public class ServletRestaurantes extends HttpServlet
     private RestauranteDAO mRestauranteDAO;
     
     private UbicacionDAO mUbicacionDAO;
+        
+    private static final String VISTA_LISTA = "/app/restaurantes/lista.jsp";
+    private static final String VISTA_FORMULARIO = "/app/restaurantes/formulario.jsp";
     
     @Override
     public void init() throws ServletException
@@ -63,7 +66,7 @@ public class ServletRestaurantes extends HttpServlet
             idRestauranteStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros);
+        Accion accion = getAccionDesdeParams(parametros, false);
         
         mostrarVistaConDatos(request, response, idRestauranteStr, accion);
     }
@@ -89,7 +92,7 @@ public class ServletRestaurantes extends HttpServlet
             idRestauranteStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros);
+        Accion accion = getAccionDesdeParams(parametros, true);
         
         Restaurante datosRecibidos = null;
         
@@ -147,7 +150,7 @@ public class ServletRestaurantes extends HttpServlet
         try
         {
             req.setAttribute("accion", accion);
-
+            
             if (idRestauranteStr != null || accion.equals(Accion.CREAR))
             {
                 if (idRestauranteStr != null) 
@@ -170,7 +173,7 @@ public class ServletRestaurantes extends HttpServlet
                 
                 req.setAttribute("encabezadoVista", encabezadoVista);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/restaurantes/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
                 requestDispatcher.forward(req, res);
                 
@@ -205,7 +208,7 @@ public class ServletRestaurantes extends HttpServlet
                 
                 req.setAttribute("restaurantes", restaurantes);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/restaurantes/lista.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
 
                 requestDispatcher.forward(req, res);
             }
@@ -220,13 +223,13 @@ public class ServletRestaurantes extends HttpServlet
      * Obtiene el valor de un parámetro con un tipo de acción, o null si el 
      * valor no existe.
      * 
-     * @param nombreParam La llave del parámetro de la query.
      * @param parametros El mapa de parámetros del query.
+     * @param esModificacion Es true si la accion esperada es CREATE, UPDATE o DELETE.
      * @return La acción especificada en el query.
      */
-    private Accion getAccionDesdeParams(Map<String, String[]> parametros)
+    private Accion getAccionDesdeParams(Map<String, String[]> parametros, boolean esModificacion)
     {
-        Accion accion = Accion.CREAR;
+        Accion accion = esModificacion ? Accion.CREAR : Accion.LEER;
         String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
         
         if (parametros.get(keyParamAccion) != null) 

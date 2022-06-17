@@ -1,11 +1,8 @@
 package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.ColoniaDAO;
-import com.rappi.crud.dao.MunicipioDAO;
 import com.rappi.crud.dao.UbicacionDAO;
 import com.rappi.crud.entidades.Colonia;
-import com.rappi.crud.entidades.Estado;
-import com.rappi.crud.entidades.Municipio;
 import com.rappi.crud.entidades.Ubicacion;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -23,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletUbicaciones", urlPatterns = {"/ubicaciones"})
+@WebServlet(name = "ServletUbicaciones", urlPatterns = {"/app/ubicaciones"})
 public class ServletUbicaciones extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
@@ -34,6 +31,9 @@ public class ServletUbicaciones extends HttpServlet
     private UbicacionDAO mUbicacionDAO;
     
     private ColoniaDAO mColoniaDAO;
+        
+    private static final String VISTA_LISTA = "/app/ubicaciones/lista.jsp";
+    private static final String VISTA_FORMULARIO = "/app/ubicaciones/formulario.jsp";
     
     @Override
     public void init() throws ServletException
@@ -181,7 +181,7 @@ public class ServletUbicaciones extends HttpServlet
                 
                 req.setAttribute("colonias", colonias);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/ubicaciones/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
                
                 System.out.println(requestDispatcher == null);
 
@@ -221,7 +221,7 @@ public class ServletUbicaciones extends HttpServlet
                 
                 req.setAttribute("ubicaciones", ubicaciones);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/ubicaciones/lista.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
 
                 requestDispatcher.forward(req, res);
             }

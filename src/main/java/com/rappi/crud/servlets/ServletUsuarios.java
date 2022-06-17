@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletUsuarios", urlPatterns = {"/usuarios"})
+@WebServlet(name = "ServletUsuarios", urlPatterns = {"/app/usuarios"})
 public class ServletUsuarios extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
@@ -31,6 +31,9 @@ public class ServletUsuarios extends HttpServlet
     private UsuarioDAO mUsuarioDAO;
     
     private UbicacionDAO mUbicacionDAO;
+        
+    private static final String VISTA_LISTA = "/app/usuarios/lista.jsp";
+    private static final String VISTA_FORMULARIO = "/app/usuarios/formulario.jsp";
     
     @Override
     public void init() throws ServletException
@@ -180,7 +183,7 @@ public class ServletUsuarios extends HttpServlet
                 
                 req.setAttribute("encabezadoVista", encabezadoVista);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/usuarios/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
                 requestDispatcher.forward(req, res);
                 
@@ -218,7 +221,7 @@ public class ServletUsuarios extends HttpServlet
                 
                 req.setAttribute("usuarios", usuarios);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/usuarios/lista.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
 
                 requestDispatcher.forward(req, res);
             }

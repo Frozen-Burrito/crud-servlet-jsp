@@ -17,7 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletPaises", urlPatterns = {"/paises"})
+@WebServlet(name = "ServletPaises", urlPatterns = {"/app/paises"})
 public class ServletPaises extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
@@ -26,6 +26,9 @@ public class ServletPaises extends HttpServlet
     private static final Logger mLogger = Logger.getLogger(ServletPaises.class.getName());
     
     private PaisDAO mPaisDAO;
+        
+    private static final String VISTA_LISTA = "/app/paises/lista.jsp";
+    private static final String VISTA_FORMULARIO = "/app/paises/formulario.jsp";
     
     @Override
     public void init() throws ServletException
@@ -148,7 +151,7 @@ public class ServletPaises extends HttpServlet
                 
                 req.setAttribute("pais", pais);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/paises/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
                 requestDispatcher.forward(req, res);
                 
@@ -159,7 +162,7 @@ public class ServletPaises extends HttpServlet
                 
                 req.setAttribute("paises", paises);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/paises/lista.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
 
                 requestDispatcher.forward(req, res);
             }

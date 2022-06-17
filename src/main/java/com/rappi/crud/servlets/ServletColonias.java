@@ -6,7 +6,6 @@ import com.rappi.crud.dao.MunicipioDAO;
 import com.rappi.crud.entidades.Colonia;
 import com.rappi.crud.entidades.Municipio;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletColonias", urlPatterns = {"/datos-colonias"})
+@WebServlet(name = "ServletColonias", urlPatterns = {"/app/datos-colonias"})
 public class ServletColonias extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
@@ -32,6 +31,9 @@ public class ServletColonias extends HttpServlet
     private ColoniaDAO mColoniaDAO;
     
     private MunicipioDAO mMunicipioDAO;
+    
+    private static final String VISTA_LISTA = "/app/colonias/lista.jsp";
+    private static final String VISTA_FORMULARIO = "/app/colonias/formulario.jsp";
     
     @Override
     public void init() throws ServletException
@@ -55,7 +57,9 @@ public class ServletColonias extends HttpServlet
             throws ServletException, IOException
     {
         Map<String, String[]> parametros = request.getParameterMap();
-        
+                
+        System.out.println("doGet()");
+
         String idColoniaStr = null;
         
         if (parametros.get(EstadoDAO.COLUMNA_ID) != null)
@@ -180,7 +184,7 @@ public class ServletColonias extends HttpServlet
                 
                 req.setAttribute("municipios", municipios);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/colonias/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
                 requestDispatcher.forward(req, res);
                 
@@ -191,7 +195,9 @@ public class ServletColonias extends HttpServlet
                 
                 req.setAttribute("colonias", colonias);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/colonias/lista.jsp");
+                System.out.println("Vista de lista: " + VISTA_LISTA);
+                
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
 
                 requestDispatcher.forward(req, res);
             }

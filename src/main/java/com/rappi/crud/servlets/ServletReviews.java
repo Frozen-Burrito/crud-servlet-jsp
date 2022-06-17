@@ -1,10 +1,15 @@
 package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.RestauranteDAO;
+import com.rappi.crud.dao.ReviewDAO;
 import com.rappi.crud.dao.UbicacionDAO;
+import com.rappi.crud.dao.UsuarioDAO;
 import com.rappi.crud.entidades.Restaurante;
+import com.rappi.crud.entidades.Review;
 import com.rappi.crud.entidades.Ubicacion;
+import com.rappi.crud.entidades.Usuario;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -20,25 +25,28 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletRestaurantes", urlPatterns = {"/restaurantes"})
-public class ServletRestaurantes extends HttpServlet
+@WebServlet(name = "ServletReviews", urlPatterns = {"/reviews"})
+public class ServletReviews extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
     private DataSource mPoolConexionesDB;
     
     private static final Logger mLogger = Logger.getLogger(ServletColonias.class.getName());
     
+    private ReviewDAO mReviewDAO;
+    
     private RestauranteDAO mRestauranteDAO;
     
-    private UbicacionDAO mUbicacionDAO;
+    private UsuarioDAO mUsuarioDAO;
     
     @Override
     public void init() throws ServletException
     {
         super.init();
 
+        mReviewDAO = new ReviewDAO(mPoolConexionesDB);
         mRestauranteDAO = new RestauranteDAO(mPoolConexionesDB);
-        mUbicacionDAO = new UbicacionDAO(mPoolConexionesDB);
+        mUsuarioDAO = new UsuarioDAO(mPoolConexionesDB);
     }
 
     // <editor-fold defaultstate="collapsed" desc="Métodos para manejar peticiones HTTP GET y POST.">
@@ -56,16 +64,16 @@ public class ServletRestaurantes extends HttpServlet
     {
         Map<String, String[]> parametros = request.getParameterMap();
         
-        String idRestauranteStr = null;
+        String idReviewStr = null;
         
         if (parametros.get(RestauranteDAO.COLUMNA_ID) != null)
         {
-            idRestauranteStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
+            idReviewStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = getAccionDesdeParams(parametros);
         
-        mostrarVistaConDatos(request, response, idRestauranteStr, accion);
+        mostrarVistaConDatos(request, response, idReviewStr, accion);
     }
 
     /**
@@ -82,23 +90,23 @@ public class ServletRestaurantes extends HttpServlet
     {
         Map<String, String[]> parametros = request.getParameterMap();
         
-        String idRestauranteStr = null;
+        String idReviewStr = null;
         
         if (parametros.get(RestauranteDAO.COLUMNA_ID) != null)
         {
-            idRestauranteStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
+            idReviewStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = getAccionDesdeParams(parametros);
         
-        Restaurante datosRecibidos = null;
+        Review datosRecibidos = null;
         
         // Obtener datos del formulario si la accion es CREAR o ACTUALIZAR.
         if (!accion.equals(Accion.ELIMINAR))
         {
             try 
             {
-                datosRecibidos = Restaurante.desdeParametros(parametros);
+                datosRecibidos = Review.desdeParametros(parametros);
 
             } catch (NullPointerException | NumberFormatException e)
             {
@@ -113,7 +121,7 @@ public class ServletRestaurantes extends HttpServlet
             switch (accion) 
             {
                 case CREAR:
-                    int idInsertado = mRestauranteDAO.insertar(datosRecibidos);
+                    int idInsertado = mReviewDAO.insertar(datosRecibidos);
                     
                     if (idInsertado >= 0) 
                     {
@@ -121,11 +129,11 @@ public class ServletRestaurantes extends HttpServlet
                     }
                     break;
                 case ACTUALIZAR:
-                    mRestauranteDAO.actualizar(datosRecibidos);
+                    mReviewDAO.actualizar(datosRecibidos);
                     break;
                 case ELIMINAR:
-                    int id = Integer.parseInt(idRestauranteStr);
-                    mRestauranteDAO.eliminar(id);
+                    int id = Integer.parseInt(idReviewStr);
+                    mReviewDAO.eliminar(id);
                     break;
             }
             
@@ -141,71 +149,97 @@ public class ServletRestaurantes extends HttpServlet
     }
     
     private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
-        String idRestauranteStr, Accion accion) 
+        String idReviewStr, Accion accion) 
         throws ServletException, IOException
     {
         try
         {
             req.setAttribute("accion", accion);
 
-            if (idRestauranteStr != null || accion.equals(Accion.CREAR))
+            if (idReviewStr != null || accion.equals(Accion.CREAR))
             {
-                if (idRestauranteStr != null) 
+                if (idReviewStr != null) 
                 {
-                    int idRestaurante = Integer.parseInt(idRestauranteStr);
+                    int idReview = Integer.parseInt(idReviewStr);
                     
                     // Obtener un registro especifico de la BD.                               
-                    Restaurante restaurante = mRestauranteDAO.getRestaurantePorID(idRestaurante);
+                    Review review = mReviewDAO.getReviewPorID(idReview);
                     
-                    req.setAttribute("restaurante", restaurante);
+                    req.setAttribute("review", review);
                 }
                 
                 // Obtener entidades relacionadas de la BD.
-                List<Ubicacion> ubicaciones = mUbicacionDAO.getUbicaciones();
+                List<Usuario> usuarios = mUsuarioDAO.getUsuarios();
                 
-                req.setAttribute("ubicaciones", ubicaciones);
+                req.setAttribute("usuarios", usuarios);
+                
+                List<Restaurante> restaurantes = mRestauranteDAO.getRestaurantes();
+                
+                req.setAttribute("restaurantes", restaurantes);
                 
                 // Determinar el título 
                 String encabezadoVista = Restaurante.tituloVistaConAccion(accion);
                 
                 req.setAttribute("encabezadoVista", encabezadoVista);
                                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/restaurantes/formulario.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/reviews/formulario.jsp");
 
                 requestDispatcher.forward(req, res);
                 
             } else 
             {
                 // Obtener todos los registros disponibles.
-                List<Restaurante> restaurantes = mRestauranteDAO.getRestaurantes();
+                List<Review> reviews = mReviewDAO.getReviews();
                                 
-                // Obtener la ubicacion para cada usuario.
-                Map<Integer, Ubicacion> ubicacionesRestaurantes = new HashMap<>();
+                // Obtener el restaurante para cada review.
+                Map<Integer, Restaurante> restaurantesDeReviews = new HashMap<>();
                 
-                for (Restaurante restaurante : restaurantes)
+                // Obtener el usuario para cada review.
+                Map<String, Usuario> autoresDeReviews = new HashMap<>();
+                
+                for (Review review : reviews)
                 {
-                    int idUbicacion = restaurante.getIdUbicacion();
-                    Ubicacion registroUbicacion = ubicacionesRestaurantes.get(idUbicacion);
+                    int idRestaurante = review.getIdRestaurante();
+                    Restaurante registroRestaurante = restaurantesDeReviews.get(idRestaurante);
                     
-                    if (registroUbicacion == null)
+                    if (registroRestaurante == null)
                     {
-                        // Si la ubicación no se ha obtenido de la BD, obtenerla y 
+                        // Si el restaurante no se ha obtenido de la BD, obtenerlo y 
                         // registrarla en el mapa.
-                        Ubicacion ubicacion = mUbicacionDAO.getUbicacionPorId(idUbicacion);
+                        Restaurante restaurante = mRestauranteDAO.getRestaurantePorID(idRestaurante);
                         
-                        if (ubicacion != null)
+                        if (restaurante != null)
                         {
-                            registroUbicacion = ubicacion;
-                            ubicacionesRestaurantes.put(idUbicacion, ubicacion);
+                            registroRestaurante = restaurante;
+                            restaurantesDeReviews.put(idRestaurante, restaurante);
                         }
                     }
                     
-                    restaurante.setUbicacion(registroUbicacion);
+                    review.setRestaurante(registroRestaurante);
+                    
+                    // Obtener el autor de cada review.
+                    String usernameAutor = review.getNombreUsuarioAutor();
+                    Usuario registroAutor = autoresDeReviews.get(usernameAutor);
+                    
+                    if (registroAutor == null)
+                    {
+                        // Si el restaurante no se ha obtenido de la BD, obtenerlo y 
+                        // registrarla en el mapa.
+                        Usuario autor = mUsuarioDAO.getUsuarioPorID(usernameAutor);
+                        
+                        if (autor != null)
+                        {
+                            registroAutor = autor;
+                            autoresDeReviews.put(usernameAutor, autor);
+                        }
+                    }
+                    
+                    review.setUsuarioAutor(registroAutor);
                 }
                 
-                req.setAttribute("restaurantes", restaurantes);
+                req.setAttribute("reviews", reviews);
                 
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/restaurantes/lista.jsp");
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher("/reviews/lista.jsp");
 
                 requestDispatcher.forward(req, res);
             }
@@ -226,7 +260,7 @@ public class ServletRestaurantes extends HttpServlet
      */
     private Accion getAccionDesdeParams(Map<String, String[]> parametros)
     {
-        Accion accion = Accion.CREAR;
+        Accion accion = Accion.LEER;
         String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
         
         if (parametros.get(keyParamAccion) != null) 

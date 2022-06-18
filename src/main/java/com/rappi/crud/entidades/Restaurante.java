@@ -3,7 +3,6 @@ package com.rappi.crud.entidades;
 import com.rappi.crud.dao.RestauranteDAO;
 import com.rappi.crud.dao.UsuarioDAO;
 import com.rappi.crud.servlets.Accion;
-import com.rappi.crud.servlets.TipoDeUsuario;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;

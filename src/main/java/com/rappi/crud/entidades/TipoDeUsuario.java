@@ -1,4 +1,4 @@
-package com.rappi.crud.servlets;
+package com.rappi.crud.entidades;
 
 public enum TipoDeUsuario
 {

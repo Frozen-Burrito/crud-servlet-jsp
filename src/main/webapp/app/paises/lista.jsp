@@ -18,11 +18,8 @@
     final String formatoUrlAccion = "%s?%s=%s";
 
     String urlDetalles = String.format(formatoUrlAccion, urlPaises, keyParamAccion, Accion.LEER);
-    String urlNuevoEstado = String.format(formatoUrlAccion, urlPaises, keyParamAccion, Accion.CREAR);
+    String urlNuevo = String.format(formatoUrlAccion, urlPaises, keyParamAccion, Accion.CREAR);
     String urlEditar = String.format(formatoUrlAccion, urlPaises, keyParamAccion, Accion.ACTUALIZAR);
-    
-    String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlAutenticacion = request.getContextPath() + "/autenticacion?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 %>
 
 <html>
@@ -32,55 +29,7 @@
     <title>Países | Vista General</title>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-          <a class="navbar-brand" href="<%= urlPaises %>">Rappi-CRUD</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="<%= urlBase %>">Inicio</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="<%= urlBase %>/usuarios">Usuarios</a>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Restaurantes
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li><a class="dropdown-item" href="<%= urlBase %>/restaurantes">Todos</a></li>
-                  <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Reseñas</a></li>
-                </ul>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Ubicación
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li><a class="dropdown-item" href="<%= urlBase %>/paises">Países</a></li>
-                  <li><a class="dropdown-item" href="<%= urlBase %>/estados">Estados</a></li>
-                  <li><a class="dropdown-item" href="<%= urlBase %>/datos-municipios">Municipios</a></li>
-                  <li><a class="dropdown-item" href="<%= urlBase %>/datos-colonias">Colonias</a></li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li><a class="dropdown-item" href="<%= urlBase %>/ubicaciones">Ubicaciones</a></li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-
-            <div class="d-flex">
-                <a 
-                    class="btn btn-outline-danger me-2" 
-                    href="<%= urlAutenticacion %>">
-                    Cerrar Sesión
-                </a>
-            </div>
-        </div>
-    </nav>
+    <jsp:include page="../../includes/navbar.jsp"></jsp:include>
                     
     <section class="container">
         
@@ -93,7 +42,7 @@
             <div class="col">
                 <a 
                     class="btn btn-primary"
-                    href="<%= urlNuevoEstado %>"
+                    href="<%= urlNuevo %>"
                 >
                     Nuevo
                 </a>
@@ -110,7 +59,7 @@
             <% for (Pais pais : paises) { %>
                 <tr>
                     <th scope="row">
-                        <a href="<%= urlDetalles %>?<%= PaisDAO.COLUMNA_ID %>=<%= pais.getCodigoPais()%>">
+                        <a href="<%= urlDetalles %>&<%= PaisDAO.COLUMNA_ID %>=<%= pais.getCodigoPais()%>">
                             <%= pais.getCodigoPais()%>
                         </a>
                     </th>
@@ -121,13 +70,13 @@
                         <div class="hstack gap-3">
                             <a 
                                 class="btn btn-warning"
-                                href="<%= urlEditar %>?<%= PaisDAO.COLUMNA_ID %>=<%= pais.getCodigoPais() %>">
+                                href="<%= urlEditar %>&<%= PaisDAO.COLUMNA_ID %>=<%= pais.getCodigoPais() %>">
                                 Editar
                             </a>
 
                             <!-- TODO: Usar DELETE para esto. -->
                             <form method="POST" action="<%= urlPaises %>" style="margin-bottom: 0px">
-                                <input type="hidden" name="<%= keyParamAccion %>" value="${Accion.ELIMINAR.toString()}" />
+                                <input type="hidden" name="<%= keyParamAccion %>" value="<%= Accion.ELIMINAR.toString() %>" />
                                 <input type="hidden" name="<%= PaisDAO.COLUMNA_ID %>" value="<%= pais.getCodigoPais() %>"/>
 
                                 <input class="btn btn-danger" type="submit" value="Eliminar"/>

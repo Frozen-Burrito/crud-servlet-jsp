@@ -1,7 +1,7 @@
 package com.rappi.crud.dao;
 
 import com.rappi.crud.entidades.Usuario;
-import com.rappi.crud.servlets.TipoDeUsuario;
+import com.rappi.crud.entidades.TipoDeUsuario;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

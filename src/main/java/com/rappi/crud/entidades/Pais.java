@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.rappi.crud.dao.PaisDAO;
+import static com.rappi.crud.entidades.Restaurante.NOMBRE_ENTIDAD;
+import com.rappi.crud.servlets.Accion;
 
 public class Pais
 {   
@@ -69,6 +71,27 @@ public class Pais
         return new Pais(codigo_pais, nombre);
     }
 
+        
+    /**
+     * Determina el encabezado adecuado para la vista de detalles de la entidad,
+     * según la acción de la vista.
+     * 
+     * @param accionVista La acción de la vista.
+     * @return El texto para el encabezado de la vista.
+     */
+    public static String tituloVistaConAccion(Accion accionVista)
+    {
+        switch (accionVista) 
+        {
+            case LEER: return "Detalles del " + NOMBRE_ENTIDAD;
+            case CREAR: return "Agrega un Nuevo " +NOMBRE_ENTIDAD;
+            case ACTUALIZAR: return "Edita el " + NOMBRE_ENTIDAD;
+            case ELIMINAR: return "¿Deseas eliminar este " + NOMBRE_ENTIDAD + "?";
+        }
+        
+        return "Vista de Detalles de " + NOMBRE_ENTIDAD;
+    }
+    
     @Override
     public String toString()
     {

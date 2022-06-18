@@ -1,7 +1,8 @@
 package com.rappi.crud.servlets;
 
-import com.rappi.crud.dao.PaisDAO;
-import com.rappi.crud.entidades.Pais;
+import com.rappi.crud.dao.PedidoDAO;
+import com.rappi.crud.entidades.Pedido;
+import com.rappi.crud.entidades.Restaurante;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
@@ -17,27 +18,28 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-@WebServlet(name = "ServletPaises", urlPatterns = {"/app/paises"})
-public class ServletPaises extends HttpServlet
+@WebServlet(name = "ServletPedidos", urlPatterns = {"/app/datos-pedidos"})
+public class ServletPedidos extends HttpServlet
 {
     @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
+    private DataSource mDataSource;
     
-    private static final Logger mLogger = Logger.getLogger(ServletPaises.class.getName());
+    private static final Logger mLogger = Logger.getLogger(ServletPedidos.class.getName());
     
-    private PaisDAO mPaisDAO;
-        
-    private static final String VISTA_LISTA = "/app/paises/lista.jsp";
-    private static final String VISTA_FORMULARIO = "/app/paises/formulario.jsp";
+    private PedidoDAO mPedidoDAO;
     
+    private static final String VISTA_LISTA = "/app/pedidos/lista.jsp";
+    private static final String VISTA_FORMULARIO = "/app/pedidos/formulario.jsp";
+
     @Override
     public void init() throws ServletException
     {
         super.init();
-
-        mPaisDAO = new PaisDAO(mPoolConexionesDB);
+        
+        mPedidoDAO = new PedidoDAO(mDataSource);
     }
 
+    // <editor-fold defaultstate="collapsed" desc="Métodos para manejar peticiones HTTP GET y POST.">
     /**
      * Handles the HTTP <code>GET</code> method.
      *
@@ -50,18 +52,19 @@ public class ServletPaises extends HttpServlet
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException
     {
+        System.out.println("doGet");
         Map<String, String[]> parametros = request.getParameterMap();
         
-        String codigoPais = null;
+        String idReviewStr = null;
         
-        if (parametros.get(PaisDAO.COLUMNA_ID) != null)
+        if (parametros.get(PedidoDAO.COLUMNA_ID) != null)
         {
-            codigoPais = parametros.get(PaisDAO.COLUMNA_ID)[0];
+            idReviewStr = parametros.get(PedidoDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = getAccionDesdeParams(parametros);
         
-        mostrarVistaConDatos(request, response, codigoPais, accion);
+        mostrarVistaConDatos(request, response, idReviewStr, accion);
     }
 
     /**
@@ -78,23 +81,23 @@ public class ServletPaises extends HttpServlet
     {
         Map<String, String[]> parametros = request.getParameterMap();
         
-        String idPais = null;
+        String idReviewStr = null;
         
-        if (parametros.get(PaisDAO.COLUMNA_ID) != null)
+        if (parametros.get(PedidoDAO.COLUMNA_ID) != null)
         {
-            idPais = parametros.get(PaisDAO.COLUMNA_ID)[0];
+            idReviewStr = parametros.get(PedidoDAO.COLUMNA_ID)[0];
         }
         
         Accion accion = getAccionDesdeParams(parametros);
         
-        Pais datosRecibidos = null;
+        Pedido datosRecibidos = null;
         
         // Obtener datos del formulario si la accion es CREAR o ACTUALIZAR.
         if (!accion.equals(Accion.ELIMINAR))
         {
             try 
             {
-                datosRecibidos = Pais.desdeParametros(parametros);
+                datosRecibidos = Pedido.desdeParametros(parametros);
 
             } catch (NullPointerException | NumberFormatException e)
             {
@@ -102,14 +105,14 @@ public class ServletPaises extends HttpServlet
                 accion = Accion.ELIMINAR;
             }
         }
-                    
+        
         // Realizar la accion CUD determinada.
         try 
         {
             switch (accion) 
             {
                 case CREAR:
-                    int idInsertado = mPaisDAO.insertarPais(datosRecibidos);
+                    int idInsertado = mPedidoDAO.insertar(datosRecibidos);
                     
                     if (idInsertado >= 0) 
                     {
@@ -117,10 +120,11 @@ public class ServletPaises extends HttpServlet
                     }
                     break;
                 case ACTUALIZAR:
-                    mPaisDAO.actualizar(datosRecibidos);
+                    mPedidoDAO.actualizar(datosRecibidos);
                     break;
                 case ELIMINAR:
-                    mPaisDAO.eliminar(idPais);
+                    int id = Integer.parseInt(idReviewStr);
+                    mPedidoDAO.eliminar(id);
                     break;
             }
             
@@ -130,33 +134,39 @@ public class ServletPaises extends HttpServlet
             
         } finally 
         {
+            // Redirigir al usuario para mostrar los resultados de la operacion.
             mostrarVistaConDatos(request, response, null, Accion.LEER);
         }
     }
     
     private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
-            String codigoPais, Accion accion) 
-            throws ServletException, IOException
+        String idPedidoStr, Accion accion) 
+        throws ServletException, IOException
     {
         try
         {
             req.setAttribute("accion", accion);
 
-            if (codigoPais != null || accion.equals(Accion.CREAR))
+            if (idPedidoStr != null || accion.equals(Accion.CREAR))
             {
-                if (codigoPais != null)
+                if (idPedidoStr != null) 
                 {
+                    int idPedido = Integer.parseInt(idPedidoStr);
+                    
                     // Obtener un registro especifico de la BD.                               
-                    Pais pais = mPaisDAO.getPaisPorId(codigoPais);
-                
-                    req.setAttribute("pais", pais);
+                    Pedido pedido = mPedidoDAO.getPedidoPorId(idPedido);
+                    
+                    req.setAttribute("pedido", pedido);
                 }
-
-                // Determinar el título 
-                String encabezadoVista = Pais.tituloVistaConAccion(accion);
+                
+                // Obtener entidades relacionadas de la BD.
+                // TODO: Obtener los productos incluidos en el pedido.
+                
+                // Determinar el título de la vista.
+                String encabezadoVista = Restaurante.tituloVistaConAccion(accion);
                 
                 req.setAttribute("encabezadoVista", encabezadoVista);
-                
+                                
                 RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
                 requestDispatcher.forward(req, res);
@@ -164,9 +174,9 @@ public class ServletPaises extends HttpServlet
             } else 
             {
                 // Obtener todos los registros disponibles.
-                List<Pais> paises = mPaisDAO.getPaises();
+                List<Pedido> pedidos = mPedidoDAO.getPedidos();
                 
-                req.setAttribute("paises", paises);
+                req.setAttribute("pedidos", pedidos);
                 
                 RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
 
@@ -178,7 +188,7 @@ public class ServletPaises extends HttpServlet
             mLogger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
-
+    
     /**
      * Obtiene el valor de un parámetro con un tipo de acción, o null si el 
      * valor no existe.
@@ -199,7 +209,7 @@ public class ServletPaises extends HttpServlet
         
         return accion;
     }
-    
+
     /**
      * Returns a short description of the servlet.
      *
@@ -208,7 +218,7 @@ public class ServletPaises extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Acceso y modificación de países.";
-    }
+        return "Accede y modifica pedidos";
+    }// </editor-fold>
 
 }

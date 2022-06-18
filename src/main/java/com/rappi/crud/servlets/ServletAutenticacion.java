@@ -1,5 +1,6 @@
 package com.rappi.crud.servlets;
 
+import com.rappi.crud.entidades.TipoDeUsuario;
 import com.rappi.crud.dao.UsuarioDAO;
 import com.rappi.crud.entidades.Usuario;
 import java.io.IOException;

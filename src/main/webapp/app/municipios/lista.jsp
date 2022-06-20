@@ -1,8 +1,8 @@
-<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
 <%@ page import="java.util.List"%>
-<%@ page import="com.rappi.crud.entidades.Municipio"%>
-<%@ page import="com.rappi.crud.dao.MunicipioDAO"%>
 <%@ page import="com.rappi.crud.servlets.Accion"%>
+<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
+<%@ page import="com.rappi.crud.dao.MunicipioDAO"%>
+<%@page import="com.rappi.crud.entidades.jpa.Municipio"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
@@ -18,14 +18,11 @@
     String urlDetalles = String.format(formatoUrlAccion, urlMunicipios, keyParamAccion, Accion.LEER);
     String urlNuevo = String.format(formatoUrlAccion, urlMunicipios, keyParamAccion, Accion.CREAR);
     String urlEditar = String.format(formatoUrlAccion, urlMunicipios, keyParamAccion, Accion.ACTUALIZAR);
-    
-    String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlAutenticacion = request.getContextPath() + "/autenticacion?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 %>
 
 <html>
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <jsp:include page="../../includes/head_links.jsp"></jsp:include>
 
     <title><%= Municipio.NOMBRE_ENTIDAD %> | Vista General</title>
 </head>
@@ -54,7 +51,7 @@
             <tr class="table-header">
                 <th scope="col">ID</th>
                 <th scope="col">Nombre</th>
-                <th scope="col">ID del Estado</th>
+                <th scope="col">Estado</th>
                 <th scope="col">Acciones</th>
             </tr>
 
@@ -67,7 +64,7 @@
                     </th>
 
                     <td><%= municipio.getNombre() %></td>
-                    <td><%= municipio.getIdEstado()%></td>
+                    <td><%= municipio.getEstado().toString() %></td>
 
                     <td class="td-acciones">
                         <div class="hstack gap-3">

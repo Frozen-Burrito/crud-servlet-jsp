@@ -1,7 +1,5 @@
 package com.rappi.crud.entidades;
 
-import com.rappi.crud.dao.ColoniaDAO;
-import com.rappi.crud.dao.EstadoDAO;
 import com.rappi.crud.dao.UbicacionDAO;
 import java.util.HashMap;
 import java.util.Map;

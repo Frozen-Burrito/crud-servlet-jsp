@@ -2,46 +2,30 @@ package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.EstadoDAO;
 import com.rappi.crud.dao.MunicipioDAO;
-import com.rappi.crud.entidades.Estado;
-import com.rappi.crud.entidades.Municipio;
+import com.rappi.crud.entidades.jpa.Estado;
+import com.rappi.crud.entidades.jpa.Municipio;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletMunicipios", urlPatterns = {"/app/datos-municipios"})
 public class ServletMunicipios extends HttpServlet
 {
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
-    
     private static final Logger mLogger = Logger.getLogger(ServletMunicipios.class.getName());
     
-    private MunicipioDAO mMunicipioDAO;
-    
-    private EstadoDAO mEstadosDAO;
+    private final MunicipioDAO mMunicipioDAO = new MunicipioDAO();
         
     private static final String VISTA_LISTA = "/app/municipios/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/municipios/formulario.jsp";
-    
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-
-        mMunicipioDAO = new MunicipioDAO(mPoolConexionesDB);
-        mEstadosDAO = new EstadoDAO(mPoolConexionesDB);
-    }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
@@ -65,13 +49,7 @@ public class ServletMunicipios extends HttpServlet
             idMunicipio = parametros.get(MunicipioDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = Accion.LEER;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         mostrarVistaConDatos(req, res, idMunicipio, accion);
     }
@@ -97,13 +75,7 @@ public class ServletMunicipios extends HttpServlet
             idMunicipio = parametros.get(MunicipioDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = Accion.CREAR;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Municipio datosRecibidos = null;
         
@@ -120,8 +92,6 @@ public class ServletMunicipios extends HttpServlet
                 accion = Accion.ELIMINAR;
             }
         }
-        
-        System.out.println("Accion: " + accion);
             
         // Realizar la accion CUD determinada.
         try 
@@ -130,11 +100,6 @@ public class ServletMunicipios extends HttpServlet
             {
                 case CREAR:
                     int idInsertado = mMunicipioDAO.insertar(datosRecibidos);
-                    
-                    if (idInsertado >= 0) 
-                    {
-                        System.out.println("Datos insertados, ID = " + idInsertado);
-                    }
                     break;
                 case ACTUALIZAR:
                     mMunicipioDAO.actualizar(datosRecibidos);
@@ -176,13 +141,17 @@ public class ServletMunicipios extends HttpServlet
                 }
                 
                 // Obtener entidades relacionadas de la BD.
-                List<Estado> estados = mEstadosDAO.getEstados();
+                EstadoDAO estadoDAO = new EstadoDAO();
+                List<Estado> estados = estadoDAO.getEstados();
                 
                 req.setAttribute("estados", estados);
+                
+                // Determinar el título 
+                String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Municipio.NOMBRE_ENTIDAD);
+                
+                req.setAttribute("encabezadoVista", encabezadoVista);
                                 
                 RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
-               
-                System.out.println(requestDispatcher == null);
 
                 requestDispatcher.forward(req, res);
                 

@@ -2,47 +2,31 @@ package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.UbicacionDAO;
 import com.rappi.crud.dao.UsuarioDAO;
-import com.rappi.crud.entidades.Ubicacion;
-import com.rappi.crud.entidades.Usuario;
+import com.rappi.crud.entidades.jpa.Ubicacion;
+import com.rappi.crud.entidades.jpa.Usuario;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletUsuarios", urlPatterns = {"/app/usuarios"})
 public class ServletUsuarios extends HttpServlet
-{
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
-    
+{    
     private static final Logger mLogger = Logger.getLogger(ServletColonias.class.getName());
     
-    private UsuarioDAO mUsuarioDAO;
+    private final UsuarioDAO mUsuarioDAO = new UsuarioDAO();
     
-    private UbicacionDAO mUbicacionDAO;
+    private final UbicacionDAO mUbicacionDAO = new UbicacionDAO();
         
     private static final String VISTA_LISTA = "/app/usuarios/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/usuarios/formulario.jsp";
-    
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-
-        mUsuarioDAO = new UsuarioDAO(mPoolConexionesDB);
-        mUbicacionDAO = new UbicacionDAO(mPoolConexionesDB);
-    }
 
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -65,13 +49,7 @@ public class ServletUsuarios extends HttpServlet
             nombreDeUsuario = parametros.get(UsuarioDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = Accion.LEER;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         mostrarVistaConDatos(request, response, nombreDeUsuario, accion);
     }
@@ -98,13 +76,7 @@ public class ServletUsuarios extends HttpServlet
         }
         
         // Obtener el tipo de operación CRUD que va a realizarse.
-        Accion accion = Accion.CREAR;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Usuario datosRecibidos = null;
         
@@ -118,117 +90,68 @@ public class ServletUsuarios extends HttpServlet
             } catch (NullPointerException | NumberFormatException e)
             {
                 mLogger.log(Level.SEVERE, null, e);
-                accion = Accion.ELIMINAR;
             }
         }
         
         // Realizar la accion CUD determinada.
-        try 
+        switch (accion) 
         {
-            switch (accion) 
-            {
-                case CREAR:
-                    int idInsertado = mUsuarioDAO.insertar(datosRecibidos);
-                    
-                    if (idInsertado >= 0) 
-                    {
-                        System.out.println("Datos insertados, ID = " + idInsertado);
-                    }
-                    break;
-                case ACTUALIZAR:
-                    mUsuarioDAO.actualizar(datosRecibidos);
-                    break;
-                case ELIMINAR:
-                    int id = Integer.parseInt(nombreDeUsuario);
-                    mUsuarioDAO.eliminar(id);
-                    break;
-            }
-            
-        } catch (SQLException e)
-        {
-            mLogger.log(Level.SEVERE, e.getMessage());
-            
-        } finally 
-        {
-            // Redirigir al usuario para mostrar los resultados de la operacion.
-            mostrarVistaConDatos(request, response, null, Accion.LEER);
+            case CREAR:
+                mUsuarioDAO.insertar(datosRecibidos);
+                break;
+            case ACTUALIZAR:
+                mUsuarioDAO.actualizar(datosRecibidos);
+                break;
+            case ELIMINAR:
+                mUsuarioDAO.eliminar(nombreDeUsuario);
+                break;
         }
+        
+        // Redirigir al usuario para mostrar los resultados de la operacion.
+        mostrarVistaConDatos(request, response, null, Accion.LEER);
     }
     
     private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
         String idUsuarioStr, Accion accion) 
         throws ServletException, IOException
     {
-        try
+        req.setAttribute("accion", accion);
+
+        if (idUsuarioStr != null || accion.equals(Accion.CREAR))
         {
-            req.setAttribute("accion", accion);
-
-            if (idUsuarioStr != null || accion.equals(Accion.CREAR))
+            if (idUsuarioStr != null) 
             {
-                if (idUsuarioStr != null) 
-                {
-                    // Obtener un registro especifico de la BD.                               
-                    Usuario usuario = mUsuarioDAO.getUsuarioPorID(idUsuarioStr);
-                    
-                    req.setAttribute("usuario", usuario);
-                }
-                
-                // Obtener entidades relacionadas de la BD.
-                List<Ubicacion> ubicaciones = mUbicacionDAO.getUbicaciones();
-                
-                req.setAttribute("ubicaciones", ubicaciones);
-                
-                // Determinar el título 
-                String encabezadoVista = Usuario.tituloVistaConAccion(accion);
-                
-                req.setAttribute("encabezadoVista", encabezadoVista);
-                                
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
+                // Obtener un registro especifico de la BD.                               
+                Usuario usuario = mUsuarioDAO.getUsuarioPorID(idUsuarioStr);
 
-                requestDispatcher.forward(req, res);
-                
-            } else 
-            {
-                // Obtener todos los registros disponibles.
-                List<Usuario> usuarios = mUsuarioDAO.getUsuarios();
-                                
-                // Obtener la ubicacion para cada usuario.
-                Map<Integer, Ubicacion> ubicacionesUsuarios = new HashMap<>();
-                
-                for (Usuario usuario : usuarios)
-                {
-                    int idUbicacion = usuario.getIdUbicacion();
-                    
-                    if (ubicacionesUsuarios.containsKey(idUbicacion)) 
-                    {
-                        // Si ya fue obtenida la ubicacion, solo hacer referencia a ella.
-                        Ubicacion ubicacion = ubicacionesUsuarios.get(idUbicacion);
-                        usuario.setUbicacion(ubicacion);
-                    }
-                    else 
-                    {
-                        // Si la ubicación no se ha obtenido de la BD, obtenerla y 
-                        // registrarla en el mapa.
-                        Ubicacion ubicacion = mUbicacionDAO.getUbicacionPorId(idUbicacion);
-                        
-                        if (ubicacion != null)
-                        {
-                            ubicacionesUsuarios.put(idUbicacion, ubicacion);
-                            usuario.setUbicacion(ubicacion);
-                        }
-                    }
-                }
-                
-                req.setAttribute("usuarios", usuarios);
-                
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
-
-                requestDispatcher.forward(req, res);
+                req.setAttribute("usuario", usuario);
             }
-            
-        } catch (SQLException e)
+
+            // Obtener entidades relacionadas de la BD.
+            List<Ubicacion> ubicaciones = mUbicacionDAO.getUbicaciones();
+
+            req.setAttribute("ubicaciones", ubicaciones);
+
+            // Determinar el título.
+            String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Usuario.NOMBRE_ENTIDAD);
+
+            req.setAttribute("encabezadoVista", encabezadoVista);
+
+            // Enviar jsp con resultado.                
+            RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
+
+            requestDispatcher.forward(req, res);
+
+        } else 
         {
-            mLogger.log(Level.SEVERE, e.getMessage(), e);
+            // Obtener todos los registros disponibles.
+            List<Usuario> usuarios = mUsuarioDAO.getUsuarios();
+
+            req.setAttribute("usuarios", usuarios);
+
+            RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
+
+            requestDispatcher.forward(req, res);
         }
     }
 
@@ -240,6 +163,6 @@ public class ServletUsuarios extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Short description";
+        return "Acceso y modificaciones a usuarios";
     }
 }

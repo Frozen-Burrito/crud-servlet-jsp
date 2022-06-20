@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.rappi.crud.dao.PaisDAO;
-import static com.rappi.crud.entidades.Restaurante.NOMBRE_ENTIDAD;
 import com.rappi.crud.servlets.Accion;
 
 public class Pais

@@ -1,8 +1,8 @@
+<%@page import="com.rappi.crud.entidades.jpa.Usuario"%>
 <%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
 <%@page import="java.util.stream.Collectors"%>
 <%@page import="java.util.stream.Stream"%>
 <%@page import="com.rappi.crud.dao.UsuarioDAO"%>
-<%@page import="com.rappi.crud.entidades.Usuario"%>
 <%@page import="com.rappi.crud.dao.UbicacionDAO"%>
 <%@page import="com.rappi.crud.entidades.Ubicacion"%>
 <%@ page import="java.util.List"%>
@@ -14,8 +14,6 @@
 <%
     List<Usuario> usuarios = (List<Usuario>) request.getAttribute("usuarios");
     
-    System.out.println("Cantidad de usuarios: " + usuarios.size());
-    
     final String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
     
     String urlBase = request.getContextPath() + "/app";
@@ -26,15 +24,12 @@
     String urlDetalles = String.format(formatoUrlAccion, urlUsuarios, keyParamAccion, Accion.LEER);
     String urlNuevo = String.format(formatoUrlAccion, urlUsuarios, keyParamAccion, Accion.CREAR);
     String urlEditar = String.format(formatoUrlAccion, urlUsuarios, keyParamAccion, Accion.ACTUALIZAR);
-    
-    String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlAutenticacion = request.getContextPath() + "/autenticacion?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 %>
 
 <html>
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
-
+    <jsp:include page="../../includes/head_links.jsp"></jsp:include>
+    
     <title><%= Usuario.NOMBRE_ENTIDAD %> | Vista General</title>
 </head>
 <body>
@@ -77,10 +72,10 @@
                         </a>
                     </th>
 
-                    <td><%= usuario.getPasswordOfuscado() %></td>
-                    <td><%= usuario.getTipoDeUsuario().toString() %></td>
+                    <td><%= usuario.getPasswordOfuscado()%></td>
+                    <td><%= usuario.getTipo() %></td>
                     <td><%= usuario.getEmail() %></td>
-                    <td><%= usuario.getNumTelefono() %></td>
+                    <td><%= usuario.getNumeroTelefonico()%></td>
                     
                     <td>
                         <%= usuario.getUbicacion() != null ? usuario.getUbicacion().toString() : "No se encontró el domicilio registrado" %>

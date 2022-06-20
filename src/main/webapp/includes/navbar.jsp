@@ -12,9 +12,10 @@
     String llaveParamAccion = AccionAutenticacion.class.getSimpleName().toLowerCase();
     
     String urlBase = request.getContextPath() + "/app";
+    String urlAutenticacion = urlBase + "/autenticacion";
            
     String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlAutenticacion = request.getContextPath() + "/autenticacion?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
+    String urlCerrarSesion = urlAutenticacion + "?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 
     String urlInciarSesion = urlAutenticacion + "?" + llaveParamAccion + "=" + AccionAutenticacion.INICIAR_SESION.name();  
     String urlCrearCuenta = urlAutenticacion + "?" + llaveParamAccion + "=" + AccionAutenticacion.CREAR_CUENTA.name(); 
@@ -47,6 +48,9 @@
                 <li><a class="dropdown-item" href="<%= urlBase %>/restaurantes">Todos</a></li>
                 <li><a class="dropdown-item" href="<%= urlBase %>/datos-pedidos">Pedidos</a></li>
                 <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Reseñas</a></li>
+                <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Productos</a></li>
+                <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Orfertas</a></li>
+                <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Ingredientes</a></li>
               </ul>
             </li>
           
@@ -80,7 +84,7 @@
             <% if (usuarioAutenticado) { %>
                 <a 
                     class="btn btn-outline-danger me-2" 
-                    href="<%= urlAutenticacion %>">
+                    href="<%= urlCerrarSesion  %>">
                     Cerrar Sesión
                 </a>
             <% } else { %>

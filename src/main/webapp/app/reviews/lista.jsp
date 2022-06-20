@@ -1,12 +1,12 @@
-<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
-<%@page import="com.rappi.crud.dao.ReviewDAO"%>
-<%@page import="com.rappi.crud.entidades.Review"%>
-<%@page import="com.rappi.crud.dao.RestauranteDAO"%>
-<%@page import="com.rappi.crud.entidades.Restaurante"%>
-<%@page import="com.rappi.crud.dao.UsuarioDAO"%>
-<%@page import="com.rappi.crud.entidades.Usuario"%>
 <%@ page import="java.util.List"%>
 <%@ page import="com.rappi.crud.servlets.Accion"%>
+<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
+<%@page import="com.rappi.crud.entidades.jpa.Review"%>
+<%@page import="com.rappi.crud.entidades.jpa.Restaurante"%>
+<%@page import="com.rappi.crud.entidades.jpa.Usuario"%>
+<%@page import="com.rappi.crud.dao.UsuarioDAO"%>
+<%@page import="com.rappi.crud.dao.RestauranteDAO"%>
+<%@page import="com.rappi.crud.dao.ReviewDAO"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
@@ -22,15 +22,12 @@
     String urlDetalles = String.format(formatoUrlAccion, urlReviews, keyParamAccion, Accion.LEER);
     String urlNuevo = String.format(formatoUrlAccion, urlReviews, keyParamAccion, Accion.CREAR);
     String urlEditar = String.format(formatoUrlAccion, urlReviews, keyParamAccion, Accion.ACTUALIZAR);
-           
-    String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlAutenticacion = request.getContextPath() + "/autenticacion?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 %>
 
 <html>
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
-
+    <jsp:include page="../../includes/head_links.jsp"></jsp:include>
+    
     <title><%= Review.NOMBRE_ENTIDAD %> | Vista General</title>
 </head>
 <body>
@@ -79,7 +76,7 @@
                     
                     <td><%= review.getFecha()%></td>
                     
-                    <td><%= review.getUsuarioAutor().getNombreUsuario() %></td>
+                    <td><%= review.getAutor().getNombreUsuario() %></td>
                     <td><%= review.getRestaurante().getNombre() %></td>
 
                     <td class="td-acciones">

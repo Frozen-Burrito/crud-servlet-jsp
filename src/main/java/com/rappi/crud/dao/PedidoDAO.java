@@ -1,7 +1,7 @@
 package com.rappi.crud.dao;
 
-import com.rappi.crud.entidades.Pedido;
 import com.rappi.crud.entidades.Review;
+import com.rappi.crud.entidades.jpa.Pedido;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,13 +9,19 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import javax.sql.DataSource;
 
 public class PedidoDAO
 {
-    private final DataSource mDataSource;
+    public static final String NOMBRE_UNIDAD_PERSISTENCE = "CRUD_PU";
     
-    public static final String NOMBRE_TABLA = "pedido";
+    private static final EntityManagerFactory mEMFactory = 
+            Persistence.createEntityManagerFactory(NOMBRE_UNIDAD_PERSISTENCE);
     
     // Nombre de la columna con la llave primaria.
     public static final String COLUMNA_ID = "id";
@@ -27,38 +33,19 @@ public class PedidoDAO
     
     public static final boolean ID_ES_AUTOMATICO = true;
         
-    public PedidoDAO(DataSource dataSource)
+    public PedidoDAO()
     {
-        this.mDataSource = dataSource;
     }
     
     public List<Pedido> getPedidos() throws SQLException 
     {
-        List<Pedido> lista = new ArrayList<>();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        Connection conexion = mDataSource.getConnection();
+        Query query = em.createNamedQuery("Pedido.findAll");
         
-        if (conexion != null)
-        {
-            final String query = "SELECT * FROM " + NOMBRE_TABLA;
-
-            PreparedStatement stmt = conexion.prepareStatement(query);
-            ResultSet resultados = stmt.executeQuery();
-
-            while (resultados.next())
-            {   
-                final Pedido review = new Pedido(
-                    resultados.getInt(COLUMNA_ID),
-                    resultados.getTimestamp(COLUMNA_FECHA),
-                    resultados.getString(COLUMNA_ID_CLIENTE),
-                    resultados.getInt(COLUMNA_ID_RESTAURANTE)
-                );
-                
-                lista.add(review);
-            }
-        }
-
-        return lista;
+        List<Pedido> resultados = query.getResultList();
+        
+        return resultados;
     }
     
     /**
@@ -70,28 +57,18 @@ public class PedidoDAO
      */
     public Pedido getPedidoPorId(int id) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
-        stmt.setInt(1, id);
+        TypedQuery<Pedido> query = em.createNamedQuery("Pedido.findById", Pedido.class);
+        query.setParameter("id", id);
+        
+        Pedido pedido = query.getSingleResult();
+        
+        em.close();
 
-        ResultSet resultados = stmt.executeQuery();
-
-        if (resultados.next())
-        {
-            final Pedido pedido = new Pedido(
-                resultados.getInt(COLUMNA_ID),
-                resultados.getTimestamp(COLUMNA_FECHA),
-                resultados.getString(COLUMNA_ID_CLIENTE),
-                resultados.getInt(COLUMNA_ID_RESTAURANTE)
-            );
-
-            return pedido;
-        }
-
-        return null;
+        return pedido;
     }
     
     /**
@@ -103,24 +80,14 @@ public class PedidoDAO
      */
     public int insertar(Pedido nuevoPedido) throws SQLException
     {
-        Connection connection = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryCrear = "INSERT INTO " + NOMBRE_TABLA 
-                + " (" + 
-                    COLUMNA_FECHA + ", " + 
-                    COLUMNA_ID_CLIENTE + ", " + 
-                    COLUMNA_ID_RESTAURANTE 
-                + ") VALUES(?, ?, ?, ?, ?)";
-
-        PreparedStatement stmt = connection.prepareStatement(queryCrear, Statement.RETURN_GENERATED_KEYS);
-
-        stmt.setTimestamp(1, nuevoPedido.getFecha());
-        stmt.setString(2, nuevoPedido.getNombreUsuarioCliente());
-        stmt.setInt(3, nuevoPedido.getIdRestaurante());
-
-        int filasModificadas = stmt.executeUpdate();
+        em.getTransaction().begin();
+        em.persist(nuevoPedido);
+        em.getTransaction().commit();
+        em.close();
         
-        return filasModificadas;
+        return -1;
     }
 
     /**
@@ -131,23 +98,12 @@ public class PedidoDAO
      */
     public void actualizar(Pedido modificaciones) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
-                " SET " + 
-                COLUMNA_FECHA + " = ?, " + 
-                COLUMNA_ID_CLIENTE + " = ?, " + 
-                COLUMNA_ID_RESTAURANTE + " = ? " + 
-                "WHERE " + COLUMNA_ID + " = ?";
-
-        PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
-        
-        stmt.setTimestamp(1, modificaciones.getFecha());
-        stmt.setString(2, modificaciones.getNombreUsuarioCliente());
-        stmt.setInt(3, modificaciones.getIdRestaurante());
-        stmt.setInt(4, modificaciones.getId());
-
-        stmt.executeUpdate();
+        em.getTransaction().begin();
+        em.merge(modificaciones);
+        em.getTransaction().commit();
+        em.close();
     }
 
     /**
@@ -158,15 +114,15 @@ public class PedidoDAO
      */
     public void eliminar(int id) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
-                                    + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
-
-        stmt.setInt(1, id);
-
-        stmt.executeUpdate();
+        Pedido pedido = getPedidoPorId(id);
+        
+        pedido = em.merge(pedido);
+        em.remove(pedido);
+        em.getTransaction().commit();
+        em.close();
     }
 }

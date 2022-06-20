@@ -1,12 +1,12 @@
-<%@page import="com.rappi.crud.dao.PedidoDAO"%>
-<%@page import="com.rappi.crud.entidades.Pedido"%>
-<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
-<%@page import="com.rappi.crud.dao.RestauranteDAO"%>
-<%@page import="com.rappi.crud.entidades.Restaurante"%>
-<%@page import="com.rappi.crud.dao.UsuarioDAO"%>
-<%@page import="com.rappi.crud.entidades.Usuario"%>
 <%@ page import="java.util.List"%>
 <%@ page import="com.rappi.crud.servlets.Accion"%>
+<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
+<%@page import="com.rappi.crud.dao.PedidoDAO"%>
+<%@page import="com.rappi.crud.entidades.jpa.Pedido"%>
+<%@page import="com.rappi.crud.dao.RestauranteDAO"%>
+<%@page import="com.rappi.crud.entidades.jpa.Restaurante"%>
+<%@page import="com.rappi.crud.dao.UsuarioDAO"%>
+<%@page import="com.rappi.crud.entidades.jpa.Usuario"%>
 
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 

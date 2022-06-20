@@ -1,21 +1,20 @@
 package com.rappi.crud.dao;
 
-import com.rappi.crud.entidades.Usuario;
-import com.rappi.crud.entidades.TipoDeUsuario;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
+import com.rappi.crud.entidades.jpa.Usuario;
 import java.util.List;
-import javax.sql.DataSource;
+import javax.persistence.EntityExistsException;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 
 public class UsuarioDAO
 {
-    private final DataSource mDataSource;
+    public static final String NOMBRE_UNIDAD_PERSISTENCE = "CRUD_PU";
     
-    public static final String NOMBRE_TABLA = "usuario";
+    private static final EntityManagerFactory mEMFactory = 
+            Persistence.createEntityManagerFactory(NOMBRE_UNIDAD_PERSISTENCE);
     
     // Nombre de la columna con la llave primaria.
     public static final String COLUMNA_ID = "nombre_usuario";
@@ -28,39 +27,14 @@ public class UsuarioDAO
     public static final String COLUMNA_ID_UBICACION = "id_ubicacion";
     
     public static final boolean ID_ES_AUTOMATICO = true;
-        
-    public UsuarioDAO(DataSource dataSource)
-    {
-        this.mDataSource = dataSource;
-    }
     
-    public List<Usuario> getUsuarios() throws SQLException 
+    public List<Usuario> getUsuarios()
     {
-        List<Usuario> lista = new ArrayList<>();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        Connection conexion = mDataSource.getConnection();
+        Query query = em.createNamedQuery("Usuario.findAll");
         
-        if (conexion != null)
-        {
-            final String query = "SELECT * FROM " + NOMBRE_TABLA;
-
-            PreparedStatement stmt = conexion.prepareStatement(query);
-            ResultSet resultados = stmt.executeQuery();
-
-            while (resultados.next())
-            {   
-                final Usuario usuario = new Usuario(
-                    resultados.getString(COLUMNA_ID),
-                    resultados.getString(COLUMNA_EMAIL),
-                    TipoDeUsuario.valueOf(resultados.getString(COLUMNA_TIPO).toUpperCase()),
-                    resultados.getString(COLUMNA_PASSWORD),
-                    resultados.getString(COLUMNA_NUM_TELEFONICO),
-                    resultados.getInt(COLUMNA_ID_UBICACION)
-                );
-                
-                lista.add(usuario);
-            }
-        }
+        List<Usuario> lista = query.getResultList();
 
         return lista;
     }
@@ -70,52 +44,29 @@ public class UsuarioDAO
      * 
      * @param nombreUsuario El username de el Usuario que se quiere obtener.
      * @return El Usuario, o null si no existe en la BD.
-     * @throws SQLException 
      */
-    public Usuario getUsuarioPorID(String nombreUsuario) throws SQLException
+    public Usuario getUsuarioPorID(String nombreUsuario)
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
-        stmt.setString(1, nombreUsuario);
+        TypedQuery<Usuario> query = em.createNamedQuery("Usuario.findByNombreUsuario", Usuario.class);
+        query.setParameter("nombreUsuario", nombreUsuario);
+        
+        Usuario usuario = query.getResultStream().findFirst().orElse(null);
+        
+        em.close();
 
-        ResultSet resultados = stmt.executeQuery();
-
-        if (resultados.next())
-        {
-            final Usuario usuario = new Usuario(
-                resultados.getString(COLUMNA_ID),
-                resultados.getString(COLUMNA_EMAIL),
-                TipoDeUsuario.valueOf(resultados.getString(COLUMNA_TIPO).toUpperCase()),
-                resultados.getString(COLUMNA_PASSWORD),
-                resultados.getString(COLUMNA_NUM_TELEFONICO),
-                resultados.getInt(COLUMNA_ID_UBICACION)
-            );
-
-            return usuario;
-        }
-
-        return null;
+        return usuario;
     }
     
-    public boolean iniciarSesion(String nombreUsuario, String password) throws SQLException
+    public boolean iniciarSesion(String nombreUsuario, String password)
     {
-        Connection conexion = mDataSource.getConnection();
+        System.out.println("Iniciando sesion");
+        Usuario usuario = getUsuarioPorID(nombreUsuario);
         
-        final String queryPorCredenciales = "SELECT * FROM " + NOMBRE_TABLA 
-            + " WHERE " + COLUMNA_ID + " = ? AND " + COLUMNA_PASSWORD + " = ?";
-        
-        PreparedStatement stmt = conexion.prepareStatement(queryPorCredenciales);
-        stmt.setString(1, nombreUsuario);
-        stmt.setString(2, password);
-
-        ResultSet resultados = stmt.executeQuery();
-        
-        boolean credencialesCorrectas = resultados.next();
-
-        return credencialesCorrectas;
+        return usuario != null && usuario.getPassword().equals(password);
     }
     
     /**
@@ -123,88 +74,58 @@ public class UsuarioDAO
      * 
      * @param nuevoUsuario Los valores para el nuevo Usuario.
      * @return El número de filas agregadas (0 es fallo, 1 es éxito).
-     * @throws SQLException 
      */
-    public int insertar(Usuario nuevoUsuario) throws SQLException
+    public int insertar(Usuario nuevoUsuario)
     {
-        Connection connection = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryCrear = "INSERT INTO " + NOMBRE_TABLA 
-                + " (" + 
-                    COLUMNA_ID + ", " + 
-                    COLUMNA_EMAIL + ", " + 
-                    COLUMNA_TIPO + ", " + 
-                    COLUMNA_PASSWORD + ", " + 
-                    COLUMNA_NUM_TELEFONICO + ", " + 
-                    COLUMNA_ID_UBICACION 
-                + ") VALUES(?, ?, ?, ?, ?, ?)";
-
-        PreparedStatement stmt = connection.prepareStatement(queryCrear, Statement.RETURN_GENERATED_KEYS);
-
-        stmt.setString(1, nuevoUsuario.getNombreUsuario());
-        stmt.setString(2, nuevoUsuario.getEmail());
-        stmt.setString(3, nuevoUsuario.getTipoDeUsuario().toString());
-        stmt.setString(4, nuevoUsuario.getPassword());
-        stmt.setString(5, nuevoUsuario.getNumTelefono());
-        stmt.setInt(6, nuevoUsuario.getIdUbicacion());
-
-        int filasModificadas = stmt.executeUpdate();
-
-        return filasModificadas;
+        try 
+        {
+            em.getTransaction().begin();
+            em.persist(nuevoUsuario);
+            em.getTransaction().commit();
+            
+            return 1;
+        } catch (EntityExistsException | IllegalArgumentException e)
+        {
+            return -1;
+        } finally 
+        {
+            em.close();
+        }
     }
 
     /**
      * Actualiza una Ubicacion existente con nuevos valores.
      * 
      * @param modificaciones Los nuevos valores para el registro de la Ubicacion.
-     * @throws SQLException 
      */
-    public void actualizar(Usuario modificaciones) throws SQLException
+    public void actualizar(Usuario modificaciones)
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
-                " SET " + 
-                COLUMNA_ID + " = ?, " + 
-                COLUMNA_EMAIL + " = ?, " + 
-                COLUMNA_TIPO + " = ?, " + 
-                COLUMNA_PASSWORD + " = ?, " + 
-                COLUMNA_NUM_TELEFONICO + " = ?, " + 
-                COLUMNA_ID_UBICACION + " = ? " +
-                "WHERE " + COLUMNA_ID + " = ?";
-
-        PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
-        
-        System.out.println("Modificaciones: " + modificaciones);
-
-        stmt.setString(1, modificaciones.getNombreUsuario());
-        stmt.setString(2, modificaciones.getEmail());
-        stmt.setString(3, modificaciones.getTipoDeUsuario().toString());
-        stmt.setString(4, modificaciones.getPassword());
-        stmt.setString(5, modificaciones.getNumTelefono());
-        stmt.setInt(6, modificaciones.getIdUbicacion());
-        stmt.setString(7, modificaciones.getNombreUsuario());
-
-        stmt.executeUpdate();
+        em.getTransaction().begin();
+        em.merge(modificaciones);
+        em.getTransaction().commit();
+        em.close();
     }
 
     /**
-     * Busca una Ubicacion que tenga un ID específico y la elimina.
+     * Busca un Usuario que tenga un ID específico y la elimina.
      * 
-     * @param id El ID de la Ubicacion que va a eliminarse.
-     * @throws SQLException 
+     * @param nombreUsuario El ID del Usuario que va a eliminarse.
      */
-    public void eliminar(int id) throws SQLException
+    public void eliminar(String nombreUsuario)
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
-                                    + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
-
-        stmt.setInt(1, id);
-
-        stmt.executeUpdate();
+        Usuario usuario = getUsuarioPorID(nombreUsuario);
+        
+        usuario = em.merge(usuario);
+        em.remove(usuario);
+        em.getTransaction().commit();
+        em.close();
     }
 }

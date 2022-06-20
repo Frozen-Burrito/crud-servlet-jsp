@@ -1,42 +1,29 @@
 package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.PaisDAO;
-import com.rappi.crud.entidades.Pais;
+import com.rappi.crud.entidades.jpa.Pais;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletPaises", urlPatterns = {"/app/paises"})
 public class ServletPaises extends HttpServlet
-{
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
-    
+{    
     private static final Logger mLogger = Logger.getLogger(ServletPaises.class.getName());
     
-    private PaisDAO mPaisDAO;
+    private final PaisDAO mPaisDAO = new PaisDAO();
         
     private static final String VISTA_LISTA = "/app/paises/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/paises/formulario.jsp";
-    
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-
-        mPaisDAO = new PaisDAO(mPoolConexionesDB);
-    }
 
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -59,7 +46,7 @@ public class ServletPaises extends HttpServlet
             codigoPais = parametros.get(PaisDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         mostrarVistaConDatos(request, response, codigoPais, accion);
     }
@@ -85,7 +72,7 @@ public class ServletPaises extends HttpServlet
             idPais = parametros.get(PaisDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Pais datosRecibidos = null;
         
@@ -153,7 +140,7 @@ public class ServletPaises extends HttpServlet
                 }
 
                 // Determinar el título 
-                String encabezadoVista = Pais.tituloVistaConAccion(accion);
+                String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Pais.NOMBRE_ENTIDAD);
                 
                 req.setAttribute("encabezadoVista", encabezadoVista);
                 
@@ -177,27 +164,6 @@ public class ServletPaises extends HttpServlet
         {
             mLogger.log(Level.SEVERE, e.getMessage(), e);
         }
-    }
-
-    /**
-     * Obtiene el valor de un parámetro con un tipo de acción, o null si el 
-     * valor no existe.
-     * 
-     * @param nombreParam La llave del parámetro de la query.
-     * @param parametros El mapa de parámetros del query.
-     * @return La acción especificada en el query.
-     */
-    private Accion getAccionDesdeParams(Map<String, String[]> parametros)
-    {
-        Accion accion = Accion.LEER;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
-        
-        return accion;
     }
     
     /**

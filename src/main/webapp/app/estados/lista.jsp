@@ -1,11 +1,9 @@
+<%@page import="com.rappi.crud.entidades.jpa.Estado"%>
+<%@ page import="java.util.List"%>
 <%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
 <%@page import="com.rappi.crud.servlets.Accion"%>
-<%@page import="com.rappi.crud.entidades.Pais"%>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-
-<%@ page import="java.util.List"%>
-<%@ page import="com.rappi.crud.entidades.Estado" %>
 <%@ page import="com.rappi.crud.dao.EstadoDAO" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
     List<Estado> estados = (List<Estado>) request.getAttribute("estados");
@@ -20,15 +18,12 @@
     String urlDetalles = String.format(formatoUrlAccion, urlEstados, keyParamAccion, Accion.LEER);
     String urlNuevoEstado = String.format(formatoUrlAccion, urlEstados, keyParamAccion, Accion.CREAR);
     String urlEditar = String.format(formatoUrlAccion, urlEstados, keyParamAccion, Accion.ACTUALIZAR);
-       
-    String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlAutenticacion = request.getContextPath() + "/autenticacion?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 %>
 
 <html>
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
-
+    <jsp:include page="../../includes/head_links.jsp"></jsp:include>
+    
     <title>Estados | Vista General</title>
 </head>
 <body>
@@ -56,7 +51,7 @@
             <tr class="table-header">
                 <th scope="col">ID</th>
                 <th scope="col">Nombre</th>
-                <th scope="col">Código de País</th>
+                <th scope="col">País</th>
                 <th scope="col">Acciones</th>
             </tr>
 
@@ -69,7 +64,7 @@
                     </th>
 
                     <td><%= estado.getNombre() %></td>
-                    <td><%= estado.getCodigoPais() %></td>
+                    <td><%= estado.getPais() %></td>
 
                     <td class="td-acciones">
                         <div class="hstack gap-3">

@@ -2,46 +2,31 @@ package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.EstadoDAO;
 import com.rappi.crud.dao.PaisDAO;
-import com.rappi.crud.entidades.Estado;
-import com.rappi.crud.entidades.Pais;
+import com.rappi.crud.entidades.jpa.Estado;
+import com.rappi.crud.entidades.jpa.Pais;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletEstados", urlPatterns = {"/app/estados"})
 public class ServletEstados extends HttpServlet
 {
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
-    
     private static final Logger mLogger = Logger.getLogger(ServletEstados.class.getName());
     
-    private EstadoDAO mEstadoDAO;
-    
-    private PaisDAO mPaisesDAO;
+    private final EstadoDAO mEstadoDAO = new EstadoDAO();
+    private final PaisDAO mPaisDAO = new PaisDAO();
     
     private static final String VISTA_LISTA = "/app/estados/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/estados/formulario.jsp";
-    
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-
-        mEstadoDAO = new EstadoDAO(mPoolConexionesDB);
-        mPaisesDAO = new PaisDAO(mPoolConexionesDB);
-    }
 
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -64,15 +49,9 @@ public class ServletEstados extends HttpServlet
             idEstado = parametros.get(EstadoDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = Accion.LEER;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
-        
-        obtenerListaDatos(req, res, idEstado, accion);
+        mostrarVistaConDatos(req, res, idEstado, accion);
     }
 
     /**
@@ -96,13 +75,7 @@ public class ServletEstados extends HttpServlet
             idEstado = parametros.get(EstadoDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = Accion.CREAR;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Estado datosRecibidos = null;
         
@@ -116,18 +89,15 @@ public class ServletEstados extends HttpServlet
             } catch (NullPointerException | NumberFormatException e)
             {
                 mLogger.log(Level.SEVERE, null, e);
-                accion = Accion.ELIMINAR;
             }
         }
-        
-        System.out.println("Accion: " + accion);
             
         // Realizar la accion CUD determinada.
         try 
         {
             switch (accion) 
             {
-                case CREAR:
+                case CREAR:                    
                     int idInsertado = mEstadoDAO.insertarEstado(datosRecibidos);
                     
                     if (idInsertado >= 0) 
@@ -150,15 +120,14 @@ public class ServletEstados extends HttpServlet
             
         } finally 
         {
-            obtenerListaDatos(req, res, null, Accion.LEER);
+            mostrarVistaConDatos(req, res, null, Accion.LEER);
         }
     }
     
-    private void obtenerListaDatos(HttpServletRequest req, HttpServletResponse res, 
+    private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
             String idEstado, Accion accion) 
             throws ServletException, IOException
     {
-        System.out.println("En doGet");
         try
         {
             req.setAttribute("accion", accion);
@@ -176,14 +145,17 @@ public class ServletEstados extends HttpServlet
                 }
                 
                 // Obtener entidades relacionadas de la BD.
-                List<Pais> paises = mPaisesDAO.getPaises();
+                List<Pais> paises = mPaisDAO.getPaises();
                 
                 req.setAttribute("paises", paises);
+                
+                // Determinar el título 
+                String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Estado.NOMBRE_ENTIDAD);
+                
+                req.setAttribute("encabezadoVista", encabezadoVista);
                                 
                 RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
-               
-                System.out.println(requestDispatcher == null);
-
+                
                 requestDispatcher.forward(req, res);
                 
             } else 

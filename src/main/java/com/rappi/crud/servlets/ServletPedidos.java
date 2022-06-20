@@ -1,43 +1,30 @@
 package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.PedidoDAO;
-import com.rappi.crud.entidades.Pedido;
-import com.rappi.crud.entidades.Restaurante;
+import com.rappi.crud.entidades.jpa.Pedido;
+import com.rappi.crud.entidades.jpa.Restaurante;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletPedidos", urlPatterns = {"/app/datos-pedidos"})
 public class ServletPedidos extends HttpServlet
 {
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mDataSource;
-    
     private static final Logger mLogger = Logger.getLogger(ServletPedidos.class.getName());
     
     private PedidoDAO mPedidoDAO;
     
     private static final String VISTA_LISTA = "/app/pedidos/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/pedidos/formulario.jsp";
-
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-        
-        mPedidoDAO = new PedidoDAO(mDataSource);
-    }
 
     // <editor-fold defaultstate="collapsed" desc="Métodos para manejar peticiones HTTP GET y POST.">
     /**
@@ -62,7 +49,7 @@ public class ServletPedidos extends HttpServlet
             idReviewStr = parametros.get(PedidoDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         mostrarVistaConDatos(request, response, idReviewStr, accion);
     }
@@ -88,7 +75,7 @@ public class ServletPedidos extends HttpServlet
             idReviewStr = parametros.get(PedidoDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Pedido datosRecibidos = null;
         
@@ -163,7 +150,7 @@ public class ServletPedidos extends HttpServlet
                 // TODO: Obtener los productos incluidos en el pedido.
                 
                 // Determinar el título de la vista.
-                String encabezadoVista = Restaurante.tituloVistaConAccion(accion);
+                String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Restaurante.NOMBRE_ENTIDAD);
                 
                 req.setAttribute("encabezadoVista", encabezadoVista);
                                 
@@ -187,27 +174,6 @@ public class ServletPedidos extends HttpServlet
         {
             mLogger.log(Level.SEVERE, e.getMessage(), e);
         }
-    }
-    
-    /**
-     * Obtiene el valor de un parámetro con un tipo de acción, o null si el 
-     * valor no existe.
-     * 
-     * @param nombreParam La llave del parámetro de la query.
-     * @param parametros El mapa de parámetros del query.
-     * @return La acción especificada en el query.
-     */
-    private Accion getAccionDesdeParams(Map<String, String[]> parametros)
-    {
-        Accion accion = Accion.LEER;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
-        
-        return accion;
     }
 
     /**

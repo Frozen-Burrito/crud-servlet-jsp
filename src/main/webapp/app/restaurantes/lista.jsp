@@ -1,16 +1,13 @@
-<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
-<%@page import="com.rappi.crud.dao.RestauranteDAO"%>
-<%@page import="com.rappi.crud.entidades.Restaurante"%>
+<%@page import="com.rappi.crud.entidades.jpa.Restaurante"%>
+<%@ page import="java.util.List"%>
 <%@page import="java.util.stream.Collectors"%>
 <%@page import="java.util.stream.Stream"%>
-<%@page import="com.rappi.crud.dao.UsuarioDAO"%>
-<%@page import="com.rappi.crud.entidades.Usuario"%>
-<%@page import="com.rappi.crud.dao.UbicacionDAO"%>
-<%@page import="com.rappi.crud.entidades.Ubicacion"%>
-<%@ page import="java.util.List"%>
-<%@ page import="com.rappi.crud.entidades.Municipio"%>
-<%@ page import="com.rappi.crud.dao.MunicipioDAO"%>
 <%@ page import="com.rappi.crud.servlets.Accion"%>
+<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
+<%@page import="com.rappi.crud.dao.RestauranteDAO"%>
+<%@page import="com.rappi.crud.dao.UsuarioDAO"%>
+<%@page import="com.rappi.crud.dao.UbicacionDAO"%>
+<%@ page import="com.rappi.crud.dao.MunicipioDAO"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
@@ -26,14 +23,11 @@
     String urlDetalles = String.format(formatoUrlAccion, urlRestaurantes, keyParamAccion, Accion.LEER);
     String urlNuevo = String.format(formatoUrlAccion, urlRestaurantes, keyParamAccion, Accion.CREAR);
     String urlEditar = String.format(formatoUrlAccion, urlRestaurantes, keyParamAccion, Accion.ACTUALIZAR);
-           
-    String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlAutenticacion = request.getContextPath() + "/autenticacion?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 %>
 
 <html>
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <jsp:include page="../../includes/head_links.jsp"></jsp:include>
 
     <title><%= Restaurante.NOMBRE_ENTIDAD %> | Vista General</title>
 </head>
@@ -80,16 +74,16 @@
                     <td><%= restaurante.getNombre() %></td>
                     
                     <td>
-                        <a href="<%= restaurante.getSitioWeb()%>"> 
-                            <%= restaurante.getSitioWeb()%>
+                        <a href="<%= restaurante.getUrlSitioWeb()%>"> 
+                            <%= restaurante.getUrlSitioWeb()%>
                         </a>
                     </td>
                     
-                    <td><%= restaurante.getNumTelefonico()%></td>
-                    <td><%= restaurante.getTipoDeCocina().toString() %></td>
+                    <td><%= restaurante.getNumeroTelefonico()%></td>
+                    <td><%= restaurante.getTipoCocina() %></td>
                     
                     <td>
-                        <%= restaurante.getUbicacion() != null ? restaurante.getUbicacion().toString() : "No se encontró el domicilio registrado" %>
+                        <%= restaurante.getUbicacion()!= null ? restaurante.getUbicacion().toString() : "No se encontró el domicilio registrado" %>
                     </td>
 
                     <td class="td-acciones">

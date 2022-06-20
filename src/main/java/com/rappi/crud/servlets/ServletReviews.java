@@ -3,51 +3,33 @@ package com.rappi.crud.servlets;
 import com.rappi.crud.dao.RestauranteDAO;
 import com.rappi.crud.dao.ReviewDAO;
 import com.rappi.crud.dao.UsuarioDAO;
-import com.rappi.crud.entidades.Restaurante;
-import com.rappi.crud.entidades.Review;
-import com.rappi.crud.entidades.Usuario;
+import com.rappi.crud.entidades.jpa.Restaurante;
+import com.rappi.crud.entidades.jpa.Review;
+import com.rappi.crud.entidades.jpa.Usuario;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletReviews", urlPatterns = {"/app/reviews"})
 public class ServletReviews extends HttpServlet
-{
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
-    
+{    
     private static final Logger mLogger = Logger.getLogger(ServletColonias.class.getName());
     
-    private ReviewDAO mReviewDAO;
+    private final ReviewDAO mReviewDAO = new ReviewDAO();
     
-    private RestauranteDAO mRestauranteDAO;
-    
-    private UsuarioDAO mUsuarioDAO;
+    private final UsuarioDAO mUsuarioDAO = new UsuarioDAO();
+    private final RestauranteDAO mRestauranteDAO = new RestauranteDAO();
     
     private static final String VISTA_LISTA = "/app/reviews/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/reviews/formulario.jsp";
-    
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-
-        mReviewDAO = new ReviewDAO(mPoolConexionesDB);
-        mRestauranteDAO = new RestauranteDAO(mPoolConexionesDB);
-        mUsuarioDAO = new UsuarioDAO(mPoolConexionesDB);
-    }
 
     // <editor-fold defaultstate="collapsed" desc="Métodos para manejar peticiones HTTP GET y POST.">
     /**
@@ -71,7 +53,7 @@ public class ServletReviews extends HttpServlet
             idReviewStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         mostrarVistaConDatos(request, response, idReviewStr, accion);
     }
@@ -97,7 +79,7 @@ public class ServletReviews extends HttpServlet
             idReviewStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Review datosRecibidos = null;
         
@@ -111,164 +93,76 @@ public class ServletReviews extends HttpServlet
             } catch (NullPointerException | NumberFormatException e)
             {
                 mLogger.log(Level.SEVERE, null, e);
-                accion = Accion.ELIMINAR;
             }
         }
         
         // Realizar la accion CUD determinada.
-        try 
+        switch (accion) 
         {
-            switch (accion) 
-            {
-                case CREAR:
-                    int idInsertado = mReviewDAO.insertar(datosRecibidos);
-                    
-                    if (idInsertado >= 0) 
-                    {
-                        System.out.println("Datos insertados, ID = " + idInsertado);
-                    }
-                    break;
-                case ACTUALIZAR:
-                    mReviewDAO.actualizar(datosRecibidos);
-                    break;
-                case ELIMINAR:
-                    int id = Integer.parseInt(idReviewStr);
-                    mReviewDAO.eliminar(id);
-                    break;
-            }
-            
-        } catch (SQLException e)
-        {
-            mLogger.log(Level.SEVERE, e.getMessage());
-            
-        } finally 
-        {
-            // Redirigir al usuario para mostrar los resultados de la operacion.
-            mostrarVistaConDatos(request, response, null, Accion.LEER);
+            case CREAR:
+                mReviewDAO.insertar(datosRecibidos);
+                break;
+            case ACTUALIZAR:
+                mReviewDAO.actualizar(datosRecibidos);
+                break;
+            case ELIMINAR:
+                int id = Integer.parseInt(idReviewStr);
+                mReviewDAO.eliminar(id);
+                break;
         }
+        
+        // Redirigir al usuario para mostrar los resultados de la operacion.
+        mostrarVistaConDatos(request, response, null, Accion.LEER);
     }
     
     private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
         String idReviewStr, Accion accion) 
         throws ServletException, IOException
     {
-        try
+        req.setAttribute("accion", accion);
+
+        if (idReviewStr != null || accion.equals(Accion.CREAR))
         {
-            req.setAttribute("accion", accion);
-
-            if (idReviewStr != null || accion.equals(Accion.CREAR))
+            if (idReviewStr != null) 
             {
-                if (idReviewStr != null) 
-                {
-                    int idReview = Integer.parseInt(idReviewStr);
-                    
-                    // Obtener un registro especifico de la BD.                               
-                    Review review = mReviewDAO.getReviewPorID(idReview);
-                    
-                    req.setAttribute("review", review);
-                }
-                
-                // Obtener entidades relacionadas de la BD.
-                List<Usuario> usuarios = mUsuarioDAO.getUsuarios();
-                
-                req.setAttribute("usuarios", usuarios);
-                
-                List<Restaurante> restaurantes = mRestauranteDAO.getRestaurantes();
-                
-                req.setAttribute("restaurantes", restaurantes);
-                
-                // Determinar el título 
-                String encabezadoVista = Restaurante.tituloVistaConAccion(accion);
-                
-                req.setAttribute("encabezadoVista", encabezadoVista);
-                                
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
+                int idReview = Integer.parseInt(idReviewStr);
 
-                requestDispatcher.forward(req, res);
-                
-            } else 
-            {
-                // Obtener todos los registros disponibles.
-                List<Review> reviews = mReviewDAO.getReviews();
-                                
-                // Obtener el restaurante para cada review.
-                Map<Integer, Restaurante> restaurantesDeReviews = new HashMap<>();
-                
-                // Obtener el usuario para cada review.
-                Map<String, Usuario> autoresDeReviews = new HashMap<>();
-                
-                for (Review review : reviews)
-                {
-                    int idRestaurante = review.getIdRestaurante();
-                    Restaurante registroRestaurante = restaurantesDeReviews.get(idRestaurante);
-                    
-                    if (registroRestaurante == null)
-                    {
-                        // Si el restaurante no se ha obtenido de la BD, obtenerlo y 
-                        // registrarla en el mapa.
-                        Restaurante restaurante = mRestauranteDAO.getRestaurantePorID(idRestaurante);
-                        
-                        if (restaurante != null)
-                        {
-                            registroRestaurante = restaurante;
-                            restaurantesDeReviews.put(idRestaurante, restaurante);
-                        }
-                    }
-                    
-                    review.setRestaurante(registroRestaurante);
-                    
-                    // Obtener el autor de cada review.
-                    String usernameAutor = review.getNombreUsuarioAutor();
-                    Usuario registroAutor = autoresDeReviews.get(usernameAutor);
-                    
-                    if (registroAutor == null)
-                    {
-                        // Si el restaurante no se ha obtenido de la BD, obtenerlo y 
-                        // registrarla en el mapa.
-                        Usuario autor = mUsuarioDAO.getUsuarioPorID(usernameAutor);
-                        
-                        if (autor != null)
-                        {
-                            registroAutor = autor;
-                            autoresDeReviews.put(usernameAutor, autor);
-                        }
-                    }
-                    
-                    review.setUsuarioAutor(registroAutor);
-                }
-                
-                req.setAttribute("reviews", reviews);
-                
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
+                // Obtener un registro especifico de la BD.                               
+                Review review = mReviewDAO.getReviewPorID(idReview);
 
-                requestDispatcher.forward(req, res);
+                req.setAttribute("review", review);
             }
-            
-        } catch (SQLException e)
+
+            // Obtener entidades relacionadas de la BD.
+            List<Usuario> usuarios = mUsuarioDAO.getUsuarios();
+
+            req.setAttribute("usuarios", usuarios);
+
+            List<Restaurante> restaurantes = mRestauranteDAO.getRestaurantes();
+
+            req.setAttribute("restaurantes", restaurantes);
+
+            // Determinar el título 
+            String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Review.NOMBRE_ENTIDAD);
+
+            req.setAttribute("encabezadoVista", encabezadoVista);
+
+            // Enviar jsp con resultado. 
+            RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
+
+            requestDispatcher.forward(req, res);
+
+        } else 
         {
-            mLogger.log(Level.SEVERE, e.getMessage(), e);
+            // Obtener todos los registros disponibles.
+            List<Review> reviews = mReviewDAO.getReviews();
+
+            req.setAttribute("reviews", reviews);
+
+            RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
+
+            requestDispatcher.forward(req, res);
         }
-    }
-     
-    /**
-     * Obtiene el valor de un parámetro con un tipo de acción, o null si el 
-     * valor no existe.
-     * 
-     * @param nombreParam La llave del parámetro de la query.
-     * @param parametros El mapa de parámetros del query.
-     * @return La acción especificada en el query.
-     */
-    private Accion getAccionDesdeParams(Map<String, String[]> parametros)
-    {
-        Accion accion = Accion.LEER;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
-        
-        return accion;
     }
 
     /**

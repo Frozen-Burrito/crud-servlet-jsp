@@ -1,10 +1,9 @@
-<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
-<%@page import="com.rappi.crud.dao.UbicacionDAO"%>
-<%@page import="com.rappi.crud.entidades.Ubicacion"%>
 <%@ page import="java.util.List"%>
-<%@ page import="com.rappi.crud.entidades.Municipio"%>
-<%@ page import="com.rappi.crud.dao.MunicipioDAO"%>
 <%@ page import="com.rappi.crud.servlets.Accion"%>
+<%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
+<%@page import="com.rappi.crud.entidades.jpa.Ubicacion"%>
+<%@page import="com.rappi.crud.dao.UbicacionDAO"%>
+<%@ page import="com.rappi.crud.dao.MunicipioDAO"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
 <%
@@ -20,14 +19,11 @@
     String urlDetalles = String.format(formatoUrlAccion, urlUbicaciones, keyParamAccion, Accion.LEER);
     String urlNuevo = String.format(formatoUrlAccion, urlUbicaciones, keyParamAccion, Accion.CREAR);
     String urlEditar = String.format(formatoUrlAccion, urlUbicaciones, keyParamAccion, Accion.ACTUALIZAR);
-    
-    String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlAutenticacion = request.getContextPath() + "/autenticacion?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 %>
 
 <html>
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <jsp:include page="../../includes/head_links.jsp"></jsp:include>
 
     <title><%= Ubicacion.NOMBRE_ENTIDAD %> | Vista General</title>
 </head>
@@ -70,9 +66,9 @@
                         </a>
                     </th>
 
-                    <td><%= ubicacion.getNombreCalle()%></td>
-                    <td><%= ubicacion.getNumExterior()%></td>
-                    <td><%= ubicacion.getNumInterior()%></td>
+                    <td><%= ubicacion.getCalle()%></td>
+                    <td><%= ubicacion.getNumeroExterior()%></td>
+                    <td><%= ubicacion.getNumeroInterior()%></td>
                     
                     <td><%= ubicacion.getColonia() != null ? ubicacion.getColonia().getNombre() : "No se encontró la colonia de la ubicación"%></td>
 

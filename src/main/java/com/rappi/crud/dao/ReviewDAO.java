@@ -1,22 +1,19 @@
 package com.rappi.crud.dao;
 
-import com.rappi.crud.entidades.Restaurante;
-import com.rappi.crud.entidades.Review;
-import com.rappi.crud.entidades.TipoDeCocina;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
+import com.rappi.crud.entidades.jpa.Review;
 import java.util.List;
-import javax.sql.DataSource;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 
 public class ReviewDAO
 {
-    private final DataSource mDataSource;
+    public static final String NOMBRE_UNIDAD_PERSISTENCE = "CRUD_PU";
     
-    public static final String NOMBRE_TABLA = "review";
+    private static final EntityManagerFactory mEMFactory = 
+            Persistence.createEntityManagerFactory(NOMBRE_UNIDAD_PERSISTENCE);
     
     // Nombre de la columna con la llave primaria.
     public static final String COLUMNA_ID = "id";
@@ -30,40 +27,19 @@ public class ReviewDAO
     
     public static final boolean ID_ES_AUTOMATICO = true;
         
-    public ReviewDAO(DataSource dataSource)
+    public ReviewDAO()
     {
-        this.mDataSource = dataSource;
     }
     
-    public List<Review> getReviews() throws SQLException 
+    public List<Review> getReviews() 
     {
-        List<Review> lista = new ArrayList<>();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        Connection conexion = mDataSource.getConnection();
+        Query query = em.createNamedQuery("Review.findAll");
         
-        if (conexion != null)
-        {
-            final String query = "SELECT * FROM " + NOMBRE_TABLA;
-
-            PreparedStatement stmt = conexion.prepareStatement(query);
-            ResultSet resultados = stmt.executeQuery();
-
-            while (resultados.next())
-            {   
-                final Review review = new Review(
-                    resultados.getInt(COLUMNA_ID),
-                    resultados.getInt(COLUMNA_PUNTAJE),
-                    resultados.getString(COLUMNA_CONTENIDO),
-                    resultados.getTimestamp(COLUMNA_FECHA),
-                    resultados.getString(COLUMNA_ID_AUTOR),
-                    resultados.getInt(COLUMNA_ID_RESTAURANTE)
-                );
-                
-                lista.add(review);
-            }
-        }
-
-        return lista;
+        List<Review> resultados = query.getResultList();
+        
+        return resultados;
     }
     
     /**
@@ -71,34 +47,21 @@ public class ReviewDAO
      * 
      * @param id El ID de la Reseña que se quiere obtener.
      * @return La Reseña, o null si no existe en la BD.
-     * @throws SQLException 
      */
-    public Review getReviewPorID(int id) throws SQLException
+    public Review getReviewPorID(int id)
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
-        stmt.setInt(1, id);
+        TypedQuery<Review> query = em.createNamedQuery("Review.findById", Review.class);
+        query.setParameter("id", id);
+        
+        Review review = query.getResultStream().findFirst().orElse(null);
+        
+        em.close();
 
-        ResultSet resultados = stmt.executeQuery();
-
-        if (resultados.next())
-        {
-            final Review review = new Review(
-                resultados.getInt(COLUMNA_ID),
-                resultados.getInt(COLUMNA_PUNTAJE),
-                resultados.getString(COLUMNA_CONTENIDO),
-                resultados.getTimestamp(COLUMNA_FECHA),
-                resultados.getString(COLUMNA_ID_AUTOR),
-                resultados.getInt(COLUMNA_ID_RESTAURANTE)
-            );
-
-            return review;
-        }
-
-        return null;
+        return review;
     }
     
     /**
@@ -106,39 +69,16 @@ public class ReviewDAO
      * 
      * @param nuevoReview Los valores para la nueva Reseña.
      * @return El número de filas agregadas (0 es fallo, 1 es éxito).
-     * @throws SQLException 
      */
-    public int insertar(Review nuevoReview) throws SQLException
+    public int insertar(Review nuevoReview)
     {
-        Connection connection = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryCrear = "INSERT INTO " + NOMBRE_TABLA 
-                + " (" + 
-                    COLUMNA_PUNTAJE + ", " + 
-                    COLUMNA_CONTENIDO + ", " + 
-                    COLUMNA_FECHA + ", " + 
-                    COLUMNA_ID_AUTOR + ", " + 
-                    COLUMNA_ID_RESTAURANTE 
-                + ") VALUES(?, ?, ?, ?, ?)";
-
-        PreparedStatement stmt = connection.prepareStatement(queryCrear, Statement.RETURN_GENERATED_KEYS);
-
-        stmt.setInt(1, nuevoReview.getPuntaje());
-        stmt.setString(2, nuevoReview.getContenido());
-        stmt.setTimestamp(3, nuevoReview.getFecha());
-        stmt.setString(4, nuevoReview.getNombreUsuarioAutor());
-        stmt.setInt(5, nuevoReview.getIdRestaurante());
-
-        stmt.executeUpdate();
-
-        ResultSet resultados = stmt.getGeneratedKeys();
-
-        if (resultados.next())
-        {
-            System.out.println("Insertado");
-            return resultados.getInt(1);
-        }
-
+        em.getTransaction().begin();
+        em.persist(nuevoReview);
+        em.getTransaction().commit();
+        em.close();
+        
         return -1;
     }
 
@@ -146,52 +86,33 @@ public class ReviewDAO
      * Actualiza una Reseña existente con nuevos valores.
      * 
      * @param modificaciones Los nuevos valores para el registro de la Reseña.
-     * @throws SQLException 
      */
-    public void actualizar(Review modificaciones) throws SQLException
+    public void actualizar(Review modificaciones) 
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
-                " SET " + 
-                COLUMNA_PUNTAJE + " = ?, " + 
-                COLUMNA_CONTENIDO + " = ?, " + 
-                COLUMNA_FECHA + " = ?, " + 
-                COLUMNA_ID_AUTOR + " = ?, " + 
-                COLUMNA_ID_RESTAURANTE + " = ? " + 
-                "WHERE " + COLUMNA_ID + " = ?";
-
-        PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
-        
-        System.out.println("Modificaciones: " + modificaciones);
-
-        stmt.setInt(1, modificaciones.getPuntaje());
-        stmt.setString(2, modificaciones.getContenido());
-        stmt.setTimestamp(3, modificaciones.getFecha());
-        stmt.setString(4, modificaciones.getNombreUsuarioAutor());
-        stmt.setInt(5, modificaciones.getIdRestaurante());
-        stmt.setInt(6, modificaciones.getId());
-
-        stmt.executeUpdate();
+        em.getTransaction().begin();
+        em.merge(modificaciones);
+        em.getTransaction().commit();
+        em.close();
     }
 
     /**
      * Busca una Reseña que tenga un ID específico y la elimina.
      * 
      * @param id El ID de la Reseña que va a eliminarse.
-     * @throws SQLException 
      */
-    public void eliminar(int id) throws SQLException
+    public void eliminar(int id)
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
-                                    + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
-
-        stmt.setInt(1, id);
-
-        stmt.executeUpdate();
+        Review review = getReviewPorID(id);
+        
+        review = em.merge(review);
+        em.remove(review);
+        em.getTransaction().commit();
+        em.close();
     }
 }

@@ -1,8 +1,14 @@
 <%@page import="com.rappi.crud.dao.UsuarioDAO"%>
 <%@page import="com.rappi.crud.servlets.AccionAutenticacion"%>
 <%
+    System.out.println("Todo bien");
+    
+    System.out.println("Request: " + request);
+    
     // Evaluar si el usuario ha iniciado sesion.
     HttpSession sesionHttp = request.getSession(false);
+    
+    System.out.println("Sesion HTTP: " + sesionHttp);
     
     String idUsuario = (String) sesionHttp.getAttribute(UsuarioDAO.COLUMNA_ID);
     
@@ -15,10 +21,12 @@
     String urlAutenticacion = urlBase + "/autenticacion";
            
     String llaveParamAccionAuth = AccionAutenticacion.class.getSimpleName().toLowerCase();
-    String urlCerrarSesion = urlAutenticacion + "?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
+    String urlCerrarSesion = request.getContextPath() + "/autenticacion" + "?" + llaveParamAccionAuth + "=" + AccionAutenticacion.CERRAR_SESION.name();  
 
     String urlInciarSesion = urlAutenticacion + "?" + llaveParamAccion + "=" + AccionAutenticacion.INICIAR_SESION.name();  
     String urlCrearCuenta = urlAutenticacion + "?" + llaveParamAccion + "=" + AccionAutenticacion.CREAR_CUENTA.name(); 
+
+    System.out.println("Todo correcto");
 %>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">

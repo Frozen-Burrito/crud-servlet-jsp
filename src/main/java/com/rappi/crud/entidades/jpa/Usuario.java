@@ -81,7 +81,7 @@ public class Usuario implements Serializable
     private Collection<Pedido> pedidoCollection;
     
     @JoinColumn(name = "id_ubicacion", referencedColumnName = "id")
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)
     private Ubicacion ubicacion;
 
     public Usuario()

@@ -71,11 +71,11 @@
                         </a>
                     </th>
 
-                    <td><%= pedido.getIdRestaurante() %></td>
+                    <td><%= pedido.getRestaurante().getNombre() %></td>
                     
                     <td><%= pedido.getFecha()%></td>
                     
-                    <td><%= pedido.getNombreUsuarioCliente()%></td>
+                    <td><%= pedido.getCliente().getNombreUsuario()%></td>
                     
                     <td>TODO: incluir productos de cada pedido (con cantidad)</td>
                     

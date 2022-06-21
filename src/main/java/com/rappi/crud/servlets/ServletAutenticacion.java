@@ -103,6 +103,9 @@ public class ServletAutenticacion extends HttpServlet
             httpSession.setAttribute(UsuarioDAO.COLUMNA_ID, nombreUsuario);
 
             dispatcher = request.getRequestDispatcher(VISTA_AUTENTICADA);
+            
+            System.out.println("Usuario autenticado");
+            
             dispatcher.forward(request, response);
         } else 
         {
@@ -137,6 +140,8 @@ public class ServletAutenticacion extends HttpServlet
             httpSession.setAttribute(UsuarioDAO.COLUMNA_ID, nombreUsuario);
 
             dispatcher = request.getRequestDispatcher(VISTA_AUTENTICADA);
+            
+            System.out.println("Usuario creado");
         }
         
         dispatcher.forward(request, response);

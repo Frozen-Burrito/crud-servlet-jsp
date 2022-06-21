@@ -21,7 +21,7 @@ public class ServletPedidos extends HttpServlet
 {
     private static final Logger mLogger = Logger.getLogger(ServletPedidos.class.getName());
     
-    private PedidoDAO mPedidoDAO;
+    private final PedidoDAO mPedidoDAO = new PedidoDAO();
     
     private static final String VISTA_LISTA = "/app/pedidos/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/pedidos/formulario.jsp";

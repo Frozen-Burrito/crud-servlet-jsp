@@ -1,7 +1,10 @@
 package com.rappi.crud.entidades.jpa;
 
+import com.rappi.crud.dao.IngredienteDAO;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -32,6 +35,9 @@ import javax.xml.bind.annotation.XmlTransient;
 public class Ingrediente implements Serializable
 {
     private static final long serialVersionUID = 1L;
+        
+    // Nombre para "mostrar" en vistas publicas.
+    public static final String NOMBRE_ENTIDAD = "Ingrediente";
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -82,6 +88,53 @@ public class Ingrediente implements Serializable
         this.esVegano = esVegano;
         this.esAlergenico = esAlergenico;
         this.tieneGluten = tieneGluten;
+    }
+    
+   /**
+     * Crea un nuevo Ingrediente a partir de un mapa de parámetros, donde las llaves son
+     * los nombres de las columnas en la BD.
+     * 
+     * @param parametros Un conjunto de valores para cada columna.
+     * @return Una instancia de Ingrediente correspondiente.
+     */
+    public static Ingrediente desdeParametros(Map<String, String[]> parametros)
+    {
+        Map<String, String> campos = new HashMap<>(); 
+
+        // Obtener solo el primer valor para cada atributo (transformar un String[]
+        // en solo un String.
+        parametros.entrySet().forEach(entrada -> {
+            campos.put(
+                    entrada.getKey(), 
+                    entrada.getValue() != null ? entrada.getValue()[0] : null
+            );
+        });
+        
+        // Obtener los valores a partir de los campos.
+        String nombre = campos.get(IngredienteDAO.COLUMNA_NOMBRE);
+
+        String idIngredienteStr = campos.get(IngredienteDAO.COLUMNA_ID);
+        short idIngrediente = -1;
+
+        if (campos.get(IngredienteDAO.COLUMNA_ID) != null)
+        {
+            idIngrediente = Short.parseShort(idIngredienteStr);
+        }
+
+        String esVeganoStr = campos.get(IngredienteDAO.COLUMNA_ESVEGANO);
+        boolean esVegano = esVeganoStr != null && esVeganoStr.equals("on");
+        System.out.println("Es vegano: " + esVegano);
+        
+        String esAlergicoStr = campos.get(IngredienteDAO.COLUMNA_ESALERGICO);
+        boolean esAlergico = esAlergicoStr != null && esAlergicoStr.equals("on");
+        System.out.println("Es Alergenico: " + esAlergico);
+
+        String tieneGlutenStr = campos.get(IngredienteDAO.COLUMNA_TIENEGLUTEN);
+        boolean tieneGluten = tieneGlutenStr != null && tieneGlutenStr.equals("on");
+        System.out.println("Tiene gluten: " + tieneGluten);
+
+        // Retornar nueva instancia de la entidad.
+        return new Ingrediente(idIngrediente, nombre, esVegano, esAlergico, tieneGluten);
     }
 
     public Short getId()

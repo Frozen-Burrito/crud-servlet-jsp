@@ -56,9 +56,9 @@
                 <li><a class="dropdown-item" href="<%= urlBase %>/restaurantes">Todos</a></li>
                 <li><a class="dropdown-item" href="<%= urlBase %>/datos-pedidos">Pedidos</a></li>
                 <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Reseñas</a></li>
-                <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Productos</a></li>
-                <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Orfertas</a></li>
-                <li><a class="dropdown-item" href="<%= urlBase %>/reviews">Ingredientes</a></li>
+                <li><a class="dropdown-item" href="<%= urlBase %>/productos">Productos</a></li>
+                <li><a class="dropdown-item" href="<%= urlBase %>/ofertas">Orfertas</a></li>
+                <li><a class="dropdown-item" href="<%= urlBase %>/ingredientes">Ingredientes</a></li>
               </ul>
             </li>
           

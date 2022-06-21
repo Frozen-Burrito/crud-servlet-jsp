@@ -1,20 +1,13 @@
 package com.rappi.crud.dao;
 
-import com.rappi.crud.entidades.Review;
 import com.rappi.crud.entidades.jpa.Pedido;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
-import javax.sql.DataSource;
 
 public class PedidoDAO
 {

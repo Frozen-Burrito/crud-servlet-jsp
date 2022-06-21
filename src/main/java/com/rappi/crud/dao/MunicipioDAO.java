@@ -1,20 +1,20 @@
 package com.rappi.crud.dao;
 
-import com.rappi.crud.entidades.Municipio;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import com.rappi.crud.entidades.jpa.Municipio;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
-import javax.sql.DataSource;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 
 public class MunicipioDAO
 {
-    private final DataSource mDataSource;
+    public static final String NOMBRE_UNIDAD_PERSISTENCE = "CRUD_PU";
     
-    public static final String NOMBRE_TABLA = "municipio";
+    private static final EntityManagerFactory mEMFactory = 
+            Persistence.createEntityManagerFactory(NOMBRE_UNIDAD_PERSISTENCE);
     
     // Nombre de la columna con la llave primaria.
     public static final String COLUMNA_ID = "id";
@@ -25,37 +25,19 @@ public class MunicipioDAO
     
     public static final boolean ID_ES_AUTOMATICO = true;
         
-    public MunicipioDAO(DataSource dataSource)
+    public MunicipioDAO()
     {
-        this.mDataSource = dataSource;
     }
     
     public List<Municipio> getMunicipios() throws SQLException 
     {
-        List<Municipio> listaMunicipios = new ArrayList<>();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        Connection conexion = mDataSource.getConnection();
+        Query query = em.createNamedQuery("Municipio.findAll");
         
-        if (conexion != null)
-        {
-            final String query = "SELECT * FROM " + NOMBRE_TABLA;
-
-            PreparedStatement stmt = conexion.prepareStatement(query);
-            ResultSet resultados = stmt.executeQuery();
-
-            while (resultados.next())
-            {   
-                final Municipio municipio = new Municipio(
-                    resultados.getInt(COLUMNA_ID),
-                    resultados.getString(COLUMNA_NOMBRE),
-                    resultados.getInt(COLUMNA_ID_ESTADO)
-                );
-                
-                listaMunicipios.add(municipio);
-            }
-        }
-
-        return listaMunicipios;
+        List<Municipio> resultados = query.getResultList();
+        
+        return resultados;
     }
     
     /**
@@ -67,27 +49,18 @@ public class MunicipioDAO
      */
     public Municipio getMunicipioPorId(int id) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
-        stmt.setInt(1, id);
+        TypedQuery<Municipio> query = em.createNamedQuery("Municipio.findById", Municipio.class);
+        query.setParameter("id", id);
+        
+        Municipio colonia = query.getResultStream().findFirst().orElse(null);
+        
+        em.close();
 
-        ResultSet resultados = stmt.executeQuery();
-
-        if (resultados.next())
-        {
-            final Municipio municipio = new Municipio(
-                resultados.getInt(COLUMNA_ID),
-                resultados.getString(COLUMNA_NOMBRE),
-                resultados.getInt(COLUMNA_ID_ESTADO)
-            );
-
-            return municipio;
-        }
-
-        return null;
+        return colonia;
     }
     
     /**
@@ -99,26 +72,13 @@ public class MunicipioDAO
      */
     public int insertar(Municipio nuevoMunicipio) throws SQLException
     {
-        Connection connection = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryInsertar = "INSERT INTO " + NOMBRE_TABLA 
-                + " (" + COLUMNA_NOMBRE + ", " + COLUMNA_ID_ESTADO + ") VALUES(?, ?)";
-
-        PreparedStatement stmt = connection.prepareStatement(queryInsertar, Statement.RETURN_GENERATED_KEYS);
-
-        stmt.setString(1, nuevoMunicipio.getNombre());
-        stmt.setInt(2, nuevoMunicipio.getIdEstado());
-
-        stmt.executeUpdate();
-
-        ResultSet resultados = stmt.getGeneratedKeys();
-
-        if (resultados.next())
-        {
-            System.out.println("Insertado");
-            return resultados.getInt(1);
-        }
-
+        em.getTransaction().begin();
+        em.persist(nuevoMunicipio);
+        em.getTransaction().commit();
+        em.close();
+        
         return -1;
     }
 
@@ -130,18 +90,12 @@ public class MunicipioDAO
      */
     public void actualizar(Municipio modificaciones) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
-                " SET " + COLUMNA_NOMBRE + " = ?, " + COLUMNA_ID_ESTADO + " = ? WHERE " + COLUMNA_ID + " = ?";
-
-        PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
-
-        stmt.setString(1, modificaciones.getNombre());
-        stmt.setInt(2, modificaciones.getIdEstado());
-        stmt.setInt(3, modificaciones.getId());
-
-        stmt.executeUpdate();
+        em.getTransaction().begin();
+        em.merge(modificaciones);
+        em.getTransaction().commit();
+        em.close();
     }
 
     /**
@@ -152,15 +106,15 @@ public class MunicipioDAO
      */
     public void eliminar(int id) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
-                                    + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
-
-        stmt.setInt(1, id);
-
-        stmt.executeUpdate();
+        Municipio municipio = getMunicipioPorId(id);
+        
+        municipio = em.merge(municipio);
+        em.remove(municipio);
+        em.getTransaction().commit();
+        em.close();
     }
 }

@@ -1,20 +1,19 @@
 package com.rappi.crud.dao;
 
-import com.rappi.crud.entidades.Ubicacion;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
+import com.rappi.crud.entidades.jpa.Ubicacion;
 import java.util.List;
-import javax.sql.DataSource;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 
 public class UbicacionDAO
 {
-    private final DataSource mDataSource;
+    public static final String NOMBRE_UNIDAD_PERSISTENCE = "CRUD_PU";
     
-    public static final String NOMBRE_TABLA = "ubicacion";
+    private static final EntityManagerFactory mEMFactory = 
+            Persistence.createEntityManagerFactory(NOMBRE_UNIDAD_PERSISTENCE);
     
     // Nombre de la columna con la llave primaria.
     public static final String COLUMNA_ID = "id";
@@ -27,41 +26,19 @@ public class UbicacionDAO
     
     public static final boolean ID_ES_AUTOMATICO = true;
         
-    public UbicacionDAO(DataSource dataSource)
+    public UbicacionDAO()
     {
-        this.mDataSource = dataSource;
     }
     
-    public List<Ubicacion> getUbicaciones() throws SQLException 
+    public List<Ubicacion> getUbicaciones()
     {
-        List<Ubicacion> lista = new ArrayList<>();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        try (Connection conexion = mDataSource.getConnection())
-        {
-            final String query = "SELECT * FROM " + NOMBRE_TABLA;
-
-            PreparedStatement stmt = conexion.prepareStatement(query);
-            ResultSet resultados = stmt.executeQuery();
-
-            while (resultados.next())
-            {   
-                final Ubicacion ubicacion = new Ubicacion(
-                    resultados.getInt(COLUMNA_ID),
-                    resultados.getString(COLUMNA_CALLE),
-                    resultados.getInt(COLUMNA_NUM_EXTERIOR),
-                    resultados.getInt(COLUMNA_NUM_INTERIOR),
-                    resultados.getInt(COLUMNA_ID_COLONIA)
-                );
-
-                lista.add(ubicacion);
-            }
-
-            return lista;
-            
-        } catch (SQLException e)
-        {
-            throw e;
-        } 
+        Query query = em.createNamedQuery("Ubicacion.findAll");
+        
+        List<Ubicacion> resultados = query.getResultList();
+        
+        return resultados;
     }
     
     /**
@@ -69,39 +46,21 @@ public class UbicacionDAO
      * 
      * @param id El ID de la Ubicacion que se quiere obtener.
      * @return La Ubicacion, o null si no existe en la BD.
-     * @throws SQLException 
      */
-    public Ubicacion getUbicacionPorId(int id) throws SQLException
+    public Ubicacion getUbicacionPorId(int id)
     {        
-        try (Connection conexion = mDataSource.getConnection()) 
-        {
-            final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
-
-            PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
-            stmt.setInt(1, id);
-
-            ResultSet resultados = stmt.executeQuery();
+        EntityManager em = mEMFactory.createEntityManager();
         
-            if (resultados.next())
-            {
-                final Ubicacion ubicacion = new Ubicacion(
-                    resultados.getInt(COLUMNA_ID),
-                    resultados.getString(COLUMNA_CALLE),
-                    resultados.getInt(COLUMNA_NUM_EXTERIOR),
-                    resultados.getInt(COLUMNA_NUM_INTERIOR),
-                    resultados.getInt(COLUMNA_ID_COLONIA)
-                );
-                System.out.println("Ubicacion: " + ubicacion.getNombreCalle() + ", " + ubicacion.getNumExterior());
+        em.getTransaction().begin();
+        
+        TypedQuery<Ubicacion> query = em.createNamedQuery("Ubicacion.findById", Ubicacion.class);
+        query.setParameter("id", id);
+        
+        Ubicacion ubicacion = query.getResultStream().findFirst().orElse(null);
+        
+        em.close();
 
-                return ubicacion;
-            }
-
-            return null;
-            
-        } catch (SQLException e)
-        {
-            throw e;
-        }
+        return ubicacion;
     }
     
     /**
@@ -109,99 +68,50 @@ public class UbicacionDAO
      * 
      * @param nuevaUbicacion Los valores para la nueva Ubicacion.
      * @return El número de filas agregadas (0 es fallo, 1 es éxito).
-     * @throws SQLException 
      */
-    public int insertar(Ubicacion nuevaUbicacion) throws SQLException
+    public int insertar(Ubicacion nuevaUbicacion)
     {
-        try (Connection conexion = mDataSource.getConnection())
-        {
-            final String queryCrear = "INSERT INTO " + NOMBRE_TABLA 
-                + " (" + COLUMNA_CALLE + ", " + 
-                COLUMNA_NUM_EXTERIOR + ", " + 
-                COLUMNA_NUM_INTERIOR + ", " + 
-                COLUMNA_ID_COLONIA 
-                + ") VALUES(?, ?, ?, ?)";
-
-            PreparedStatement stmt = conexion.prepareStatement(queryCrear, Statement.RETURN_GENERATED_KEYS);
-
-            stmt.setString(1, nuevaUbicacion.getNombreCalle());
-            stmt.setInt(2, nuevaUbicacion.getNumExterior());
-            stmt.setInt(3, nuevaUbicacion.getNumInterior());
-            stmt.setInt(4, nuevaUbicacion.getIdColonia());
-
-            stmt.executeUpdate();
-
-            ResultSet resultados = stmt.getGeneratedKeys();
-
-            if (resultados.next())
-            {
-                System.out.println("Insertado");
-                return resultados.getInt(1);
-            }
-
-            return -1;
+        EntityManager em = mEMFactory.createEntityManager();
         
-        } catch (SQLException e)
-        {
-            throw e;
-        }
+        em.getTransaction().begin();
+        em.persist(nuevaUbicacion);
+        em.getTransaction().commit();
+        em.close();
+        
+        return -1;
     }
 
     /**
      * Actualiza una Ubicacion existente con nuevos valores.
      * 
      * @param modificaciones Los nuevos valores para el registro de la Ubicacion.
-     * @throws SQLException 
      */
-    public void actualizar(Ubicacion modificaciones) throws SQLException
+    public void actualizar(Ubicacion modificaciones)
     {
-        try (Connection conexion = mDataSource.getConnection())
-        {
-            final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
-                " SET " + 
-                COLUMNA_CALLE + " = ?, " + 
-                COLUMNA_NUM_EXTERIOR + " = ?, " + 
-                COLUMNA_NUM_INTERIOR + " = ?, " + 
-                COLUMNA_ID_COLONIA + " = ? " + 
-                "WHERE " + COLUMNA_ID + " = ?";
-
-            PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
-
-            stmt.setString(1, modificaciones.getNombreCalle());
-            stmt.setInt(2, modificaciones.getNumExterior());
-            stmt.setInt(3, modificaciones.getNumInterior());
-            stmt.setInt(4, modificaciones.getIdColonia());
-            stmt.setInt(5, modificaciones.getId());
-
-            stmt.executeUpdate();
-            
-        } catch (SQLException e) 
-        {
-            throw e;
-        }
+        EntityManager em = mEMFactory.createEntityManager();
+        
+        em.getTransaction().begin();
+        em.merge(modificaciones);
+        em.getTransaction().commit();
+        em.close();
     }
 
     /**
      * Busca una Ubicacion que tenga un ID específico y la elimina.
      * 
      * @param id El ID de la Ubicacion que va a eliminarse.
-     * @throws SQLException 
      */
-    public void eliminar(int id) throws SQLException
+    public void eliminar(int id)
     {
-        try (Connection conexion = mDataSource.getConnection())
-        {
-            final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
-                                        + " WHERE " + COLUMNA_ID + " = ?";
-
-            PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
-
-            stmt.setInt(1, id);
-
-            stmt.executeUpdate();
-        } catch (SQLException e)
-        {
-            throw e;
-        }
+        EntityManager em = mEMFactory.createEntityManager();
+        
+        em.getTransaction().begin();
+        
+        Ubicacion ubicacion = getUbicacionPorId(id);
+        
+        ubicacion = em.merge(ubicacion);
+        em.remove(ubicacion);
+        em.getTransaction().commit();
+        em.close();
     }
 }

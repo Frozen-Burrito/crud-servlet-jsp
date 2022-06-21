@@ -2,47 +2,31 @@ package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.RestauranteDAO;
 import com.rappi.crud.dao.UbicacionDAO;
-import com.rappi.crud.entidades.Restaurante;
-import com.rappi.crud.entidades.Ubicacion;
+import com.rappi.crud.entidades.jpa.Restaurante;
+import com.rappi.crud.entidades.jpa.Ubicacion;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletRestaurantes", urlPatterns = {"/app/restaurantes"})
 public class ServletRestaurantes extends HttpServlet
 {
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
-    
     private static final Logger mLogger = Logger.getLogger(ServletColonias.class.getName());
     
-    private RestauranteDAO mRestauranteDAO;
+    private final RestauranteDAO mRestauranteDAO = new RestauranteDAO();
     
-    private UbicacionDAO mUbicacionDAO;
+    private final UbicacionDAO mUbicacionDAO = new UbicacionDAO();
         
     private static final String VISTA_LISTA = "/app/restaurantes/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/restaurantes/formulario.jsp";
-    
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-
-        mRestauranteDAO = new RestauranteDAO(mPoolConexionesDB);
-        mUbicacionDAO = new UbicacionDAO(mPoolConexionesDB);
-    }
 
     // <editor-fold defaultstate="collapsed" desc="Métodos para manejar peticiones HTTP GET y POST.">
     /**
@@ -66,7 +50,7 @@ public class ServletRestaurantes extends HttpServlet
             idRestauranteStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros, false);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         mostrarVistaConDatos(request, response, idRestauranteStr, accion);
     }
@@ -92,7 +76,7 @@ public class ServletRestaurantes extends HttpServlet
             idRestauranteStr = parametros.get(RestauranteDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = getAccionDesdeParams(parametros, true);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Restaurante datosRecibidos = null;
         
@@ -106,138 +90,80 @@ public class ServletRestaurantes extends HttpServlet
             } catch (NullPointerException | NumberFormatException e)
             {
                 mLogger.log(Level.SEVERE, null, e);
-                accion = Accion.ELIMINAR;
             }
         }
         
         // Realizar la accion CUD determinada.
-        try 
+        switch (accion) 
         {
-            switch (accion) 
-            {
-                case CREAR:
-                    int idInsertado = mRestauranteDAO.insertar(datosRecibidos);
-                    
-                    if (idInsertado >= 0) 
-                    {
-                        System.out.println("Datos insertados, ID = " + idInsertado);
-                    }
-                    break;
-                case ACTUALIZAR:
-                    mRestauranteDAO.actualizar(datosRecibidos);
-                    break;
-                case ELIMINAR:
-                    int id = Integer.parseInt(idRestauranteStr);
-                    mRestauranteDAO.eliminar(id);
-                    break;
-            }
-            
-        } catch (SQLException e)
-        {
-            mLogger.log(Level.SEVERE, e.getMessage());
-            
-        } finally 
-        {
-            // Redirigir al usuario para mostrar los resultados de la operacion.
-            mostrarVistaConDatos(request, response, null, Accion.LEER);
+            case CREAR:
+                mRestauranteDAO.insertar(datosRecibidos);
+                break;
+            case ACTUALIZAR:
+                mRestauranteDAO.actualizar(datosRecibidos);
+                break;
+            case ELIMINAR:
+                int id = Integer.parseInt(idRestauranteStr);
+                mRestauranteDAO.eliminar(id);
+                break;
         }
+        
+        // Redirigir al usuario para mostrar los resultados de la operacion.
+        mostrarVistaConDatos(request, response, null, Accion.LEER);
     }
     
-    private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
+    private void mostrarVistaConDatos(HttpServletRequest request, HttpServletResponse response, 
         String idRestauranteStr, Accion accion) 
         throws ServletException, IOException
     {
-        try
+
+        request.setAttribute("accion", accion);
+
+        if (idRestauranteStr != null || accion.equals(Accion.CREAR))
         {
-            req.setAttribute("accion", accion);
-            
-            if (idRestauranteStr != null || accion.equals(Accion.CREAR))
+            if (idRestauranteStr != null) 
             {
-                if (idRestauranteStr != null) 
+                try 
                 {
                     int idRestaurante = Integer.parseInt(idRestauranteStr);
-                    
+
                     // Obtener un registro especifico de la BD.                               
                     Restaurante restaurante = mRestauranteDAO.getRestaurantePorID(idRestaurante);
-                    
-                    req.setAttribute("restaurante", restaurante);
-                }
-                
-                // Obtener entidades relacionadas de la BD.
-                List<Ubicacion> ubicaciones = mUbicacionDAO.getUbicaciones();
-                
-                req.setAttribute("ubicaciones", ubicaciones);
-                
-                // Determinar el título 
-                String encabezadoVista = Restaurante.tituloVistaConAccion(accion);
-                
-                req.setAttribute("encabezadoVista", encabezadoVista);
-                                
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
-                requestDispatcher.forward(req, res);
-                
-            } else 
-            {
-                // Obtener todos los registros disponibles.
-                List<Restaurante> restaurantes = mRestauranteDAO.getRestaurantes();
-                                
-                // Obtener la ubicacion para cada usuario.
-                Map<Integer, Ubicacion> ubicacionesRestaurantes = new HashMap<>();
-                
-                for (Restaurante restaurante : restaurantes)
+                    request.setAttribute("restaurante", restaurante);
+                    
+                } catch (NumberFormatException e)
                 {
-                    int idUbicacion = restaurante.getIdUbicacion();
-                    Ubicacion registroUbicacion = ubicacionesRestaurantes.get(idUbicacion);
-                    
-                    if (registroUbicacion == null)
-                    {
-                        // Si la ubicación no se ha obtenido de la BD, obtenerla y 
-                        // registrarla en el mapa.
-                        Ubicacion ubicacion = mUbicacionDAO.getUbicacionPorId(idUbicacion);
-                        
-                        if (ubicacion != null)
-                        {
-                            registroUbicacion = ubicacion;
-                            ubicacionesRestaurantes.put(idUbicacion, ubicacion);
-                        }
-                    }
-                    
-                    restaurante.setUbicacion(registroUbicacion);
+                    request.setAttribute("ubicacion", null);
                 }
-                
-                req.setAttribute("restaurantes", restaurantes);
-                
-                RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
-
-                requestDispatcher.forward(req, res);
             }
-            
-        } catch (SQLException e)
+
+            // Obtener entidades relacionadas de la BD.
+            List<Ubicacion> ubicaciones = mUbicacionDAO.getUbicaciones();
+
+            request.setAttribute("ubicaciones", ubicaciones);
+
+            // Determinar el título 
+            String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Restaurante.NOMBRE_ENTIDAD);
+
+            request.setAttribute("encabezadoVista", encabezadoVista);
+
+            // Enviar jsp con resultado.  
+            RequestDispatcher requestDispatcher = request.getRequestDispatcher(VISTA_FORMULARIO);
+
+            requestDispatcher.forward(request, response);
+
+        } else 
         {
-            mLogger.log(Level.SEVERE, e.getMessage(), e);
+            // Obtener todos los registros disponibles.
+            List<Restaurante> restaurantes = mRestauranteDAO.getRestaurantes();
+
+            request.setAttribute("restaurantes", restaurantes);
+
+            RequestDispatcher requestDispatcher = request.getRequestDispatcher(VISTA_LISTA);
+
+            requestDispatcher.forward(request, response);
         }
-    }
-     
-    /**
-     * Obtiene el valor de un parámetro con un tipo de acción, o null si el 
-     * valor no existe.
-     * 
-     * @param parametros El mapa de parámetros del query.
-     * @param esModificacion Es true si la accion esperada es CREATE, UPDATE o DELETE.
-     * @return La acción especificada en el query.
-     */
-    private Accion getAccionDesdeParams(Map<String, String[]> parametros, boolean esModificacion)
-    {
-        Accion accion = esModificacion ? Accion.CREAR : Accion.LEER;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
-        
-        return accion;
     }
 
     /**
@@ -248,7 +174,7 @@ public class ServletRestaurantes extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Short description";
+        return "Acceso y modificacion de restaurantes";
     }// </editor-fold>
 
 }

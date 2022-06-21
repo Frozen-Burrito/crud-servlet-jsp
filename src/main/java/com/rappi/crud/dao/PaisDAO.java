@@ -1,21 +1,20 @@
 package com.rappi.crud.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
-import javax.sql.DataSource;
-
-import com.rappi.crud.entidades.Pais;
+import com.rappi.crud.entidades.jpa.Pais;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 
 public class PaisDAO
 {
-    private final DataSource mDataSource;
+    public static final String NOMBRE_UNIDAD_PERSISTENCE = "CRUD_PU";
     
-    public static final String NOMBRE_TABLA = "pais";
+    private static final EntityManagerFactory mEMFactory = 
+            Persistence.createEntityManagerFactory(NOMBRE_UNIDAD_PERSISTENCE);
     
     // Nombre de la columna con la llave primaria.
     public static final String COLUMNA_ID = "codigo_iso_3166";
@@ -24,35 +23,18 @@ public class PaisDAO
     public static final String COLUMNA_NOMBRE = "nombre";
     
     public static final boolean ID_ES_AUTOMATICO = false;
-        
-    public PaisDAO(DataSource dataSource)
+    
+    public PaisDAO()
     {
-        this.mDataSource = dataSource;
     }
     
     public List<Pais> getPaises() throws SQLException 
     {
-        List<Pais> listaPaises = new ArrayList<>();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        Connection conexion = mDataSource.getConnection();
+        Query query = em.createNamedQuery("Pais.findAll", Pais.class);
         
-        if (conexion != null)
-        {
-            final String query = "SELECT * FROM " + NOMBRE_TABLA;
-
-            PreparedStatement stmt = conexion.prepareStatement(query);
-            ResultSet resultados = stmt.executeQuery();
-
-            while (resultados.next())
-            {   
-                final Pais pais = new Pais(
-                    resultados.getString(COLUMNA_ID),
-                    resultados.getString(COLUMNA_NOMBRE)
-                );
-                
-                listaPaises.add(pais);
-            }
-        }
+        List<Pais> listaPaises = query.getResultList();
 
         return listaPaises;
     }
@@ -66,26 +48,18 @@ public class PaisDAO
      */
     public Pais getPaisPorId(String codigoPais) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
-        stmt.setString(1, codigoPais);
-
-        ResultSet resultados = stmt.executeQuery();
-
-        if (resultados.next())
-        {
-            final Pais pais = new Pais(
-                resultados.getString(COLUMNA_ID),
-                resultados.getString(COLUMNA_NOMBRE)
-            );
-
-            return pais;
-        }
-
-        return null;
+        TypedQuery<Pais> query = em.createNamedQuery("Pais.findByCodigoIso3166", Pais.class);
+        query.setParameter("codigoIso3166", codigoPais);
+        
+        Pais pais = query.getSingleResult();
+        
+        em.close();
+            
+        return pais;
     }
     
     /**
@@ -97,26 +71,13 @@ public class PaisDAO
      */
     public int insertarPais(Pais nuevoPais) throws SQLException
     {
-        Connection connection = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryCrearPais = "INSERT INTO " + NOMBRE_TABLA 
-                + " (" + COLUMNA_ID + ", " + COLUMNA_NOMBRE + ") VALUES(?, ?)";
-
-        PreparedStatement stmt = connection.prepareStatement(queryCrearPais, Statement.RETURN_GENERATED_KEYS);
-
-        stmt.setString(1, nuevoPais.getCodigoPais());
-        stmt.setString(2, nuevoPais.getNombre());
-
-        stmt.executeUpdate();
-
-        ResultSet resultados = stmt.getGeneratedKeys();
-
-        if (resultados.next())
-        {
-            System.out.println("Insertado");
-            return resultados.getInt(1);
-        }
-
+        em.getTransaction().begin();
+        em.persist(nuevoPais);
+        em.getTransaction().commit();
+        em.close();
+        
         return -1;
     }
 
@@ -128,18 +89,12 @@ public class PaisDAO
      */
     public void actualizar(Pais modificaciones) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
-                " SET " + COLUMNA_ID + " = ?, " + COLUMNA_NOMBRE + " = ? WHERE " + COLUMNA_ID + " = ?";
-
-        PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
-
-        stmt.setString(1, modificaciones.getCodigoPais());
-        stmt.setString(2, modificaciones.getNombre());
-        stmt.setString(3, modificaciones.getCodigoPais());
-
-        stmt.executeUpdate();
+        em.getTransaction().begin();
+        em.merge(modificaciones);
+        em.getTransaction().commit();
+        em.close();
     }
 
     /**
@@ -150,15 +105,15 @@ public class PaisDAO
      */
     public void eliminar(String codigoPais) throws SQLException
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
-                                    + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
-
-        stmt.setString(1, codigoPais);
-
-        stmt.executeUpdate();
+        Pais pais = getPaisPorId(codigoPais);
+        
+        pais = em.merge(pais);
+        em.remove(pais);
+        em.getTransaction().commit();
+        em.close();
     }
 }

@@ -1,21 +1,20 @@
 package com.rappi.crud.dao;
 
-import com.rappi.crud.entidades.Colonia;
-import com.rappi.crud.entidades.Estado;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import com.rappi.crud.entidades.jpa.Colonia;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
-import javax.sql.DataSource;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 
 public class ColoniaDAO
-{
-    private final DataSource mDataSource;
+{       
+    public static final String NOMBRE_UNIDAD_PERSISTENCE = "CRUD_PU";
     
-    public static final String NOMBRE_TABLA = "colonia";
+    private static final EntityManagerFactory mEMFactory = 
+            Persistence.createEntityManagerFactory(NOMBRE_UNIDAD_PERSISTENCE);
     
     // Nombre de la columna con la llave primaria.
     public static final String COLUMNA_ID = "id";
@@ -27,38 +26,19 @@ public class ColoniaDAO
     
     public static final boolean ID_ES_AUTOMATICO = true;
         
-    public ColoniaDAO(DataSource dataSource)
+    public ColoniaDAO()
     {
-        this.mDataSource = dataSource;
     }
     
-    public List<Colonia> getColonias() throws SQLException 
+    public List<Colonia> getColonias()
     {
-        List<Colonia> listaColonias = new ArrayList<>();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        Connection conexion = mDataSource.getConnection();
+        Query query = em.createNamedQuery("Colonia.findAll");
         
-        if (conexion != null)
-        {
-            final String query = "SELECT * FROM " + NOMBRE_TABLA;
-
-            PreparedStatement stmt = conexion.prepareStatement(query);
-            ResultSet resultados = stmt.executeQuery();
-
-            while (resultados.next())
-            {   
-                final Colonia colonia = new Colonia(
-                    resultados.getInt(COLUMNA_ID),
-                    resultados.getString(COLUMNA_NOMBRE),
-                    resultados.getInt(COLUMNA_CODIGO_POSTAL),
-                    resultados.getInt(COLUMNA_ID_MUNICIPIO)
-                );
-                
-                listaColonias.add(colonia);
-            }
-        }
-
-        return listaColonias;
+        List<Colonia> resultados = query.getResultList();
+        
+        return resultados;
     }
     
     /**
@@ -66,32 +46,21 @@ public class ColoniaDAO
      * 
      * @param id El ID de la Colonia que se quiere obtener.
      * @return La Colonia, o null si no existe en la BD.
-     * @throws SQLException 
      */
-    public Colonia getColoniaPorId(int id) throws SQLException
+    public Colonia getColoniaPorId(int id)
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryPorCodigo = "SELECT * FROM " + NOMBRE_TABLA + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryPorCodigo);
-        stmt.setInt(1, id);
+        TypedQuery<Colonia> query = em.createNamedQuery("Colonia.findById", Colonia.class);
+        query.setParameter("id", id);
+        
+        Colonia colonia = query.getResultStream().findFirst().orElse(null);
+        
+        em.close();
 
-        ResultSet resultados = stmt.executeQuery();
-
-        if (resultados.next())
-        {
-            final Colonia colonia = new Colonia(
-                resultados.getInt(COLUMNA_ID),
-                resultados.getString(COLUMNA_NOMBRE),
-                resultados.getInt(COLUMNA_CODIGO_POSTAL),
-                resultados.getInt(COLUMNA_ID_MUNICIPIO)
-            );
-
-            return colonia;
-        }
-
-        return null;
+        return colonia;
     }
     
     /**
@@ -99,34 +68,16 @@ public class ColoniaDAO
      * 
      * @param nuevaColonia Los valores para la nueva Colonias.
      * @return El número de filas agregadas (0 es fallo, 1 es éxito).
-     * @throws SQLException 
      */
-    public int insertar(Colonia nuevaColonia) throws SQLException
+    public int insertar(Colonia nuevaColonia)
     {
-        Connection connection = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryCrear = "INSERT INTO " + NOMBRE_TABLA 
-                + " (" + COLUMNA_NOMBRE + ", " + 
-                COLUMNA_CODIGO_POSTAL + ", " + 
-                COLUMNA_ID_MUNICIPIO 
-                + ") VALUES(?, ?, ?)";
-
-        PreparedStatement stmt = connection.prepareStatement(queryCrear, Statement.RETURN_GENERATED_KEYS);
-
-        stmt.setString(1, nuevaColonia.getNombre());
-        stmt.setInt(2, nuevaColonia.getCodigoPostal());
-        stmt.setInt(3, nuevaColonia.getIdMunicipio());
-
-        stmt.executeUpdate();
-
-        ResultSet resultados = stmt.getGeneratedKeys();
-
-        if (resultados.next())
-        {
-            System.out.println("Insertado");
-            return resultados.getInt(1);
-        }
-
+        em.getTransaction().begin();
+        em.persist(nuevaColonia);
+        em.getTransaction().commit();
+        em.close();
+        
         return -1;
     }
 
@@ -134,46 +85,33 @@ public class ColoniaDAO
      * Actualiza una Colonia existente con nuevos valores.
      * 
      * @param modificaciones Los nuevos valores para el registro de la Colonia.
-     * @throws SQLException 
      */
-    public void actualizar(Colonia modificaciones) throws SQLException
+    public void actualizar(Colonia modificaciones)
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryActualizar = "UPDATE " + NOMBRE_TABLA + 
-                " SET " + 
-                COLUMNA_NOMBRE + " = ?, " + 
-                COLUMNA_CODIGO_POSTAL + " = ?, " + 
-                COLUMNA_ID_MUNICIPIO + " = ? " + 
-                "WHERE " + COLUMNA_ID + " = ?";
-
-        PreparedStatement stmt = conexion.prepareStatement(queryActualizar);
-
-        stmt.setString(1, modificaciones.getNombre());
-        stmt.setInt(2, modificaciones.getCodigoPostal());
-        stmt.setInt(3, modificaciones.getIdMunicipio());
-        stmt.setInt(4, modificaciones.getId());
-
-        stmt.executeUpdate();
+        em.getTransaction().begin();
+        em.merge(modificaciones);
+        em.getTransaction().commit();
+        em.close();
     }
 
     /**
      * Busca una Colonia que tenga un código específico y lo elimina.
      * 
      * @param id El ID de la Colonia que va a eliminarse.
-     * @throws SQLException 
      */
-    public void eliminar(int id) throws SQLException
+    public void eliminar(int id)
     {
-        Connection conexion = mDataSource.getConnection();
+        EntityManager em = mEMFactory.createEntityManager();
         
-        final String queryEliminar = "DELETE FROM " + NOMBRE_TABLA 
-                                    + " WHERE " + COLUMNA_ID + " = ?";
+        em.getTransaction().begin();
         
-        PreparedStatement stmt = conexion.prepareStatement(queryEliminar);
-
-        stmt.setInt(1, id);
-
-        stmt.executeUpdate();
+        Colonia colonia = getColoniaPorId(id);
+        
+        colonia = em.merge(colonia);
+        em.remove(colonia);
+        em.getTransaction().commit();
+        em.close();
     }
 }

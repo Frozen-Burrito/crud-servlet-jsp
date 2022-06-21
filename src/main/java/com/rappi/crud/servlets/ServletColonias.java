@@ -3,46 +3,31 @@ package com.rappi.crud.servlets;
 import com.rappi.crud.dao.ColoniaDAO;
 import com.rappi.crud.dao.EstadoDAO;
 import com.rappi.crud.dao.MunicipioDAO;
-import com.rappi.crud.entidades.Colonia;
-import com.rappi.crud.entidades.Municipio;
+import com.rappi.crud.entidades.jpa.Colonia;
+import com.rappi.crud.entidades.jpa.Municipio;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletColonias", urlPatterns = {"/app/datos-colonias"})
 public class ServletColonias extends HttpServlet
-{
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
-    
+{    
     private static final Logger mLogger = Logger.getLogger(ServletColonias.class.getName());
     
-    private ColoniaDAO mColoniaDAO;
-    
-    private MunicipioDAO mMunicipioDAO;
+    private final ColoniaDAO mColoniaDAO = new ColoniaDAO();
+    private final MunicipioDAO mMunicipioDAO = new MunicipioDAO();
     
     private static final String VISTA_LISTA = "/app/colonias/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/colonias/formulario.jsp";
-    
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-
-        mColoniaDAO = new ColoniaDAO(mPoolConexionesDB);
-        mMunicipioDAO = new MunicipioDAO(mPoolConexionesDB);
-    }
 
     /**
      * Handles the HTTP <code>GET</code> method.
@@ -57,8 +42,6 @@ public class ServletColonias extends HttpServlet
             throws ServletException, IOException
     {
         Map<String, String[]> parametros = request.getParameterMap();
-                
-        System.out.println("doGet()");
 
         String idColoniaStr = null;
         
@@ -67,13 +50,7 @@ public class ServletColonias extends HttpServlet
             idColoniaStr = parametros.get(EstadoDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = Accion.LEER;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         mostrarVistaConDatos(request, response, idColoniaStr, accion);
     }
@@ -99,13 +76,7 @@ public class ServletColonias extends HttpServlet
             idColoniaStr = parametros.get(EstadoDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = Accion.CREAR;
-        String keyParamAccion = Accion.class.getSimpleName().toLowerCase();
-        
-        if (parametros.get(keyParamAccion) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(keyParamAccion)[0]);
-        }
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Colonia datosRecibidos = null;
         
@@ -119,44 +90,25 @@ public class ServletColonias extends HttpServlet
             } catch (NullPointerException | NumberFormatException e)
             {
                 mLogger.log(Level.SEVERE, null, e);
-                accion = Accion.ELIMINAR;
             }
         }
-        
-        System.out.println("Colonia: " + datosRecibidos);
-        
-        System.out.println("Accion: " + accion);
             
         // Realizar la accion CUD determinada.
-        try 
+        switch (accion) 
         {
-            switch (accion) 
-            {
-                case CREAR:
-                    int idInsertado = mColoniaDAO.insertar(datosRecibidos);
-                    
-                    if (idInsertado >= 0) 
-                    {
-                        System.out.println("Datos insertados, ID = " + idInsertado);
-                    }
-                    break;
-                case ACTUALIZAR:
-                    mColoniaDAO.actualizar(datosRecibidos);
-                    break;
-                case ELIMINAR:
-                    int id = Integer.parseInt(idColoniaStr);
-                    mColoniaDAO.eliminar(id);
-                    break;
-            }
-            
-        } catch (SQLException e)
-        {
-            mLogger.log(Level.SEVERE, e.getMessage());
-            
-        } finally 
-        {
-            mostrarVistaConDatos(request, response, null, Accion.LEER);
+            case CREAR:
+                mColoniaDAO.insertar(datosRecibidos);
+                break;
+            case ACTUALIZAR:
+                mColoniaDAO.actualizar(datosRecibidos);
+                break;
+            case ELIMINAR:
+                int id = Integer.parseInt(idColoniaStr);
+                mColoniaDAO.eliminar(id);
+                break;
         }
+        
+        mostrarVistaConDatos(request, response, null, Accion.LEER);
     }
     
     private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
@@ -183,7 +135,13 @@ public class ServletColonias extends HttpServlet
                 List<Municipio> municipios = mMunicipioDAO.getMunicipios();
                 
                 req.setAttribute("municipios", municipios);
+                
+                // Determinar el título 
+                String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Colonia.NOMBRE_ENTIDAD);
+                
+                req.setAttribute("encabezadoVista", encabezadoVista);
                                 
+                // Enviar jsp con resultado.
                 RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
                 requestDispatcher.forward(req, res);
@@ -194,8 +152,6 @@ public class ServletColonias extends HttpServlet
                 List<Colonia> colonias = mColoniaDAO.getColonias();
                 
                 req.setAttribute("colonias", colonias);
-                
-                System.out.println("Vista de lista: " + VISTA_LISTA);
                 
                 RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_LISTA);
 
@@ -216,6 +172,6 @@ public class ServletColonias extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Short description";
+        return "Acceso y modificaciones a colonias.";
     }
 }

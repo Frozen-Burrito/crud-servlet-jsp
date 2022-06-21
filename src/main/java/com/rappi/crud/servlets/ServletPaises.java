@@ -1,56 +1,43 @@
 package com.rappi.crud.servlets;
 
 import com.rappi.crud.dao.PaisDAO;
-import com.rappi.crud.entidades.Pais;
+import com.rappi.crud.entidades.jpa.Pais;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 
 @WebServlet(name = "ServletPaises", urlPatterns = {"/app/paises"})
 public class ServletPaises extends HttpServlet
-{
-    @Resource(name = "jdbc/dataSourcePrincipal")
-    private DataSource mPoolConexionesDB;
-    
+{    
     private static final Logger mLogger = Logger.getLogger(ServletPaises.class.getName());
     
-    private PaisDAO mPaisDAO;
+    private final PaisDAO mPaisDAO = new PaisDAO();
         
     private static final String VISTA_LISTA = "/app/paises/lista.jsp";
     private static final String VISTA_FORMULARIO = "/app/paises/formulario.jsp";
-    
-    @Override
-    public void init() throws ServletException
-    {
-        super.init();
-
-        mPaisDAO = new PaisDAO(mPoolConexionesDB);
-    }
 
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param req servlet request
-     * @param res servlet response
+     * @param request servlet request
+     * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse res)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException
     {
-        Map<String, String[]> parametros = req.getParameterMap();
+        Map<String, String[]> parametros = request.getParameterMap();
         
         String codigoPais = null;
         
@@ -59,22 +46,24 @@ public class ServletPaises extends HttpServlet
             codigoPais = parametros.get(PaisDAO.COLUMNA_ID)[0];
         }
         
-        obtenerListaDatos(req, res, codigoPais);
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
+        
+        mostrarVistaConDatos(request, response, codigoPais, accion);
     }
 
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param req servlet request
-     * @param res servlet response
+     * @param request servlet request
+     * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse res)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException
     {
-        Map<String, String[]> parametros = req.getParameterMap();
+        Map<String, String[]> parametros = request.getParameterMap();
         
         String idPais = null;
         
@@ -83,12 +72,7 @@ public class ServletPaises extends HttpServlet
             idPais = parametros.get(PaisDAO.COLUMNA_ID)[0];
         }
         
-        Accion accion = Accion.CREAR;
-        
-        if (parametros.get(Accion.class.getName()) != null) 
-        {
-            accion = Accion.valueOf(parametros.get(Accion.class.getName())[0]);
-        }
+        Accion accion = Utilidades.getAccionDesdeParams(parametros);
         
         Pais datosRecibidos = null;
         
@@ -105,9 +89,7 @@ public class ServletPaises extends HttpServlet
                 accion = Accion.ELIMINAR;
             }
         }
-        
-        System.out.println("Accion: " + accion);
-            
+                    
         // Realizar la accion CUD determinada.
         try 
         {
@@ -135,21 +117,32 @@ public class ServletPaises extends HttpServlet
             
         } finally 
         {
-            obtenerListaDatos(req, res, null);
+            mostrarVistaConDatos(request, response, null, Accion.LEER);
         }
     }
     
-    private void obtenerListaDatos(HttpServletRequest req, HttpServletResponse res, String codigoPais) 
+    private void mostrarVistaConDatos(HttpServletRequest req, HttpServletResponse res, 
+            String codigoPais, Accion accion) 
             throws ServletException, IOException
     {
         try
         {
-            if (codigoPais != null)
+            req.setAttribute("accion", accion);
+
+            if (codigoPais != null || accion.equals(Accion.CREAR))
             {
-                // Obtener un registro especifico de la BD.                               
-                Pais pais = mPaisDAO.getPaisPorId(codigoPais);
+                if (codigoPais != null)
+                {
+                    // Obtener un registro especifico de la BD.                               
+                    Pais pais = mPaisDAO.getPaisPorId(codigoPais);
                 
-                req.setAttribute("pais", pais);
+                    req.setAttribute("pais", pais);
+                }
+
+                // Determinar el título 
+                String encabezadoVista = Utilidades.tituloVistaConAccion(accion, Pais.NOMBRE_ENTIDAD);
+                
+                req.setAttribute("encabezadoVista", encabezadoVista);
                 
                 RequestDispatcher requestDispatcher = req.getRequestDispatcher(VISTA_FORMULARIO);
 
@@ -172,7 +165,7 @@ public class ServletPaises extends HttpServlet
             mLogger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
-
+    
     /**
      * Returns a short description of the servlet.
      *
